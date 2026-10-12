@@ -93,6 +93,7 @@ export function buildMatchReport(opts: {
   lines: { id: string; text: string }[];
   knockoutWarnings: string[];
   fallbackBullets: string[];
+  candidates?: MatchReport['candidates'];
 }): MatchReport {
   const row = (r: Requirement) => {
     const c = opts.selection.coverage[r.id] ?? { bestScore: 0, achievementId: null };
@@ -123,6 +124,7 @@ export function buildMatchReport(opts: {
       })),
     knockoutWarnings: opts.knockoutWarnings,
     fallbackBullets: opts.fallbackBullets,
+    candidates: opts.candidates ?? [],
   };
 }
 

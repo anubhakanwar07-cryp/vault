@@ -24,7 +24,7 @@ import { buildMatchReport, orderSkills, pickExtras } from './assemble-utils';
 import { retrieve } from './retrieve';
 import { writeHeadlineSummary, type RewriteContext } from './rewrite';
 import { scoreEvidence } from './score';
-import { select, selectedIds } from './select';
+import { baseValue, select, selectedIds } from './select';
 import { requirementsOf, type ProgressEvent } from './types';
 import { rewriteAndVerifyBullets, verifyClaimsLLM, type RewriteHooks } from './verify';
 import { leadVerb, verifySummaryLine, type VerifyContext } from './verify-code';
@@ -297,6 +297,13 @@ export async function runTailorPipeline(opts: {
       lines: [...lines, { id: 'headline', text: headline }, { id: 'summary', text: summary }],
       knockoutWarnings: knockoutWarnings(jd.knockouts, spans),
       fallbackBullets,
+      candidates: candidates.map((c) => ({
+        achievementId: c.id,
+        value: Math.round(baseValue(c, requirements, matrix, new Date()) * 100) / 100,
+        scores: Object.fromEntries(
+          Object.entries(matrix[c.id] ?? {}).map(([req, v]) => [req, v.score]),
+        ),
+      })),
     });
 
     const resumeId = await withUser(userId, async (tx) => {

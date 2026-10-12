@@ -1,5 +1,6 @@
 import 'server-only';
 import { lookup } from 'node:dns/promises';
+import { launchBrowser } from '@/lib/browser';
 import { htmlToText, isPrivateAddress, pickProjectLinks, type PageText } from './page-text';
 
 const TIMEOUT_MS = 12_000;
@@ -85,28 +86,9 @@ async function fetchHtml(
   throw new FetchPageError('too many redirects', 'That link redirects too many times.');
 }
 
-/** Chrome executable for local rendering. Vercel uses @sparticuz/chromium (added with PDF export). */
-function chromePath(): string | undefined {
-  return (
-    process.env.CHROME_PATH ??
-    (process.platform === 'darwin'
-      ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-      : process.platform === 'linux'
-        ? '/usr/bin/google-chrome'
-        : undefined)
-  );
-}
-
 /** Renders a JavaScript-built page in headless Chrome and returns its final HTML. */
 async function renderHtml(url: string): Promise<string> {
-  const executablePath = chromePath();
-  if (!executablePath) throw new FetchPageError('no chrome', 'This site needs a browser to read.');
-  const puppeteer = await import('puppeteer-core');
-  const browser = await puppeteer.launch({
-    executablePath,
-    headless: true,
-    args: ['--no-sandbox'],
-  });
+  const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.setUserAgent(UA);

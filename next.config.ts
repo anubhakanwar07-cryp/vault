@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   // pdf-parse ships its own pdf.js worker; bundling it breaks worker resolution.
-  serverExternalPackages: ['pdf-parse'],
+  serverExternalPackages: ['pdf-parse', 'puppeteer-core', '@sparticuz/chromium'],
   experimental: { serverActions: { bodySizeLimit: '6mb' } },
   partialPrefetching: true,
   turbopack: {

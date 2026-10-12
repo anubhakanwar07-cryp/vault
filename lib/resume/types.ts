@@ -71,6 +71,16 @@ export const matchReport = z.object({
   gaps: z.array(z.object({ reqId: z.string(), req: z.string(), suggestion: z.string() })),
   knockoutWarnings: z.array(z.string()),
   fallbackBullets: z.array(z.string()),
+  /** Every scored candidate from the run (for Swap and per-bullet rewrites). Not in SPEC's type; additive. */
+  candidates: z
+    .array(
+      z.object({
+        achievementId: z.string(),
+        value: z.number(),
+        scores: z.record(z.string(), z.number()),
+      }),
+    )
+    .default([]),
 });
 export type MatchReport = z.output<typeof matchReport>;
 
