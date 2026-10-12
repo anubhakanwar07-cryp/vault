@@ -193,6 +193,22 @@ export const extras = pgTable(
   (t) => [index().on(t.userId), ownerPolicy('extras')],
 ).enableRLS();
 
+/** Raw material the vault was built from: uploaded resumes, portfolio sites, free-text briefs. */
+export const vaultSources = pgTable(
+  'vault_sources',
+  {
+    id: id(),
+    userId: userId(),
+    kind: text('kind', { enum: ['resume', 'portfolio', 'brief'] }).notNull(),
+    title: text('title'),
+    url: text('url'),
+    filePath: text('file_path'), // Storage path for uploaded files
+    text: text('text').notNull(), // extracted plain text — the "source" for no-fabrication checks
+    ...timestamps(),
+  },
+  (t) => [index().on(t.userId), ownerPolicy('vault_sources')],
+).enableRLS();
+
 // ---------------------------------------------------------------------------
 // Jobs, resumes, applications
 // ---------------------------------------------------------------------------

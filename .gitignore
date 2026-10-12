@@ -43,3 +43,6 @@ next-env.d.ts
 
 # evals
 /evals/reports/
+
+# private test fixtures (your real resume)
+/tests/fixtures/private/

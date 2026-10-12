@@ -1,11 +1,9 @@
-import { ComingSoon } from '@/components/shell/coming-soon';
+import { VaultView } from '@/components/vault/vault-view';
+import { requireUser } from '@/lib/auth';
+import { getVaultTree } from '@/lib/db/queries/vault';
 
-export default function Page() {
-  return (
-    <ComingSoon
-      title="Career vault"
-      phase={2}
-      what="Your roles, projects and achievements, stored once in depth. Import your current resume to get started."
-    />
-  );
+export default async function VaultPage() {
+  const user = await requireUser();
+  const tree = await getVaultTree(user.id);
+  return <VaultView tree={tree} />;
 }

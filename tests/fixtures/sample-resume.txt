@@ -1,0 +1,32 @@
+Priya Sharma
+priya.sharma@example.com | +91 98765 43210 | Bengaluru, India | linkedin.com/in/priya-sharma-example
+
+EXPERIENCE
+
+Associate Product Manager, LearnLoop (edtech platform for K-12 tutoring)
+Bengaluru | Jun 2023 – Present
+- Launched an AI homework helper using GPT-4 and LangChain, reaching 12,000 weekly active students within 3 months
+- Built an LLM evaluation harness in Python that cut answer-quality regressions by ~35%
+- Ran 14 A/B tests on onboarding with Amplitude, lifting day-7 retention by 8 percentage points
+- Partnered with a team of 4 engineers and 1 designer to redesign the parent dashboard
+
+Product Analyst Intern, PayNest (fintech)
+Mumbai | Jan 2022 – May 2022
+- Wrote SQL dashboards in Metabase used by the growth team to track UPI payment funnel drop-off
+- Identified a KYC step causing about 20% abandonment and presented findings to the founder
+
+PROJECTS
+
+Resume Ranker (side project) — github.com/priya-example/resume-ranker
+- Built a Streamlit app that scores resumes against job descriptions using embeddings; 300 users in the first month
+
+EDUCATION
+
+B.Tech, Computer Science, NIT Trichy | 2019 – 2023 | CGPA 8.6
+
+AWARDS & LEADERSHIP
+- Winner, Smart India Hackathon 2022
+- President, Product Club, NIT Trichy
+
+SKILLS
+Product discovery, A/B testing, SQL, Python, LLM evals, Amplitude, Figma

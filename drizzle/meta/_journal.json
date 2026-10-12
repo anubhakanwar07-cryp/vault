@@ -15,6 +15,13 @@
       "when": 1791802819898,
       "tag": "0001_updated_at_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791818112082,
+      "tag": "0002_vault_sources",
+      "breakpoints": true
     }
   ]
 }
