@@ -2,12 +2,16 @@ export type Tier = 'fast' | 'strong';
 
 export type ChatMessage = { role: 'user' | 'assistant'; content: string };
 
+export type ReasoningEffort = 'none' | 'low' | 'medium' | 'high';
+
 export type CompletionRequest = {
   model: string;
   system: string;
   messages: ChatMessage[];
   temperature: number;
   maxTokens: number;
+  /** Reasoning models only. 'none' keeps latency/cost low and lets temperature apply. */
+  reasoningEffort?: ReasoningEffort;
 };
 
 export type CompletionResponse = {

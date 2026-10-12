@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import { extractJson } from './json';
 import type { LlmLogger } from './log';
-import type { ChatMessage, LLMProvider, Tier } from './types';
+import type { ChatMessage, LLMProvider, ReasoningEffort, Tier } from './types';
 
 export type CallLLMOptions<T> = {
   stage: string;
@@ -17,6 +17,8 @@ export type CallLLMOptions<T> = {
   /** Validation retries after the first attempt. Default 2. */
   maxRetries?: number;
   maxTokens?: number;
+  /** Default 'none' (see providers/openai.ts). */
+  reasoningEffort?: ReasoningEffort;
 };
 
 export type LLMDeps = {
@@ -66,6 +68,7 @@ export async function callLLMWith<T>(deps: LLMDeps, opts: CallLLMOptions<T>): Pr
         messages,
         temperature: opts.temperature ?? 0.2,
         maxTokens: opts.maxTokens ?? 4096,
+        reasoningEffort: opts.reasoningEffort,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

@@ -1,0 +1,1523 @@
+{
+ "profile": {
+  "fullName": "Aarav Mehta",
+  "email": "aarav.mehta@example.com",
+  "phone": "+91 90000 00000",
+  "location": "Bengaluru, India",
+  "links": [
+   {
+    "label": "aaravmehta.example",
+    "url": "https://aaravmehta.example"
+   }
+  ],
+  "targetRoleFamilies": [
+   "ai_pm",
+   "pm",
+   "growth"
+  ]
+ },
+ "roles": [
+  {
+   "key": "r1",
+   "company": "Lumio",
+   "title": "Product Manager",
+   "location": "Bengaluru",
+   "start": "2023-04-01",
+   "end": null,
+   "employmentType": "full-time",
+   "companyContext": "Consumer learning app for exam prep, 1.2M monthly learners",
+   "projects": [
+    {
+     "key": "p1",
+     "name": "AI Study Coach",
+     "oneLiner": "LLM-powered tutor that explains mistakes and suggests practice",
+     "ownership": "I owned the product end to end; built with 4 engineers and 1 ML engineer",
+     "proofUrl": "https://lumio.example/coach",
+     "start": "2023-06-01",
+     "end": null,
+     "achievements": [
+      {
+       "key": "a01",
+       "situation": "Learners churned after repeated wrong answers with no explanation",
+       "action": "Launched an LLM-powered study coach that explains wrong answers step by step",
+       "result": "Became the most-used feature in the app within one quarter",
+       "metricValue": "38% of weekly active learners",
+       "metricConfidence": "exact",
+       "skills": [
+        "LLM product design",
+        "prompt design"
+       ],
+       "tools": [
+        "GPT-4",
+        "LangChain"
+       ],
+       "functionTags": [
+        "ai-ml",
+        "zero-to-one"
+       ],
+       "domainTags": [
+        "edtech",
+        "b2c"
+       ],
+       "senioritySignals": [
+        "owned product end to end"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a02",
+       "situation": null,
+       "action": "Built an offline evaluation suite of 600 graded tutor answers to score accuracy, pedagogy and safety before each release",
+       "result": "Caught regressions before release and cut learner-reported wrong explanations",
+       "metricValue": "~45%",
+       "metricConfidence": "estimate",
+       "skills": [
+        "LLM evals",
+        "evaluation design"
+       ],
+       "tools": [
+        "Python",
+        "pytest"
+       ],
+       "functionTags": [
+        "ai-ml",
+        "research"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [
+        "set release quality bar"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a03",
+       "situation": null,
+       "action": "Introduced retrieval over the syllabus content library so the coach cites the exact textbook concept",
+       "result": "Reduced hallucinated explanations in spot checks",
+       "metricValue": "from 12% to 3%",
+       "metricConfidence": "exact",
+       "skills": [
+        "RAG",
+        "retrieval"
+       ],
+       "tools": [
+        "pgvector",
+        "OpenAI embeddings"
+       ],
+       "functionTags": [
+        "ai-ml"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a04",
+       "situation": null,
+       "action": "Negotiated model cost vs. quality trade-offs by routing easy questions to a smaller model",
+       "result": "Cut inference cost per active learner",
+       "metricValue": "about 40%",
+       "metricConfidence": "estimate",
+       "skills": [
+        "model selection",
+        "cost optimisation"
+       ],
+       "tools": [
+        "GPT-4",
+        "GPT-3.5"
+       ],
+       "functionTags": [
+        "ai-ml",
+        "ops"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [
+        "presented trade-off to CTO"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a05",
+       "situation": null,
+       "action": "Ran weekly learner interviews and session reviews to prioritise coach improvements",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "user research",
+        "product discovery"
+       ],
+       "tools": [
+        "Dovetail"
+       ],
+       "functionTags": [
+        "research"
+       ],
+       "domainTags": [
+        "edtech",
+        "b2c"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a06",
+       "situation": null,
+       "action": "Designed a hint-first mode that nudges learners before revealing the answer",
+       "result": "Raised practice completion rate for learners using hints",
+       "metricValue": "9 percentage points",
+       "metricConfidence": "exact",
+       "skills": [
+        "experiment design",
+        "UX"
+       ],
+       "tools": [
+        "Amplitude",
+        "Figma"
+       ],
+       "functionTags": [
+        "ai-ml",
+        "design"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a45",
+       "situation": null,
+       "action": "Set up a red-teaming rota where the team tried to break the tutor each sprint",
+       "result": "Found and fixed unsafe responses before launch",
+       "metricValue": "23 issues",
+       "metricConfidence": "exact",
+       "skills": [
+        "AI safety",
+        "red teaming"
+       ],
+       "tools": [],
+       "functionTags": [
+        "ai-ml"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [
+        "ran cross-team rota"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a46",
+       "situation": null,
+       "action": "Wrote the AI tutor PRD and success metrics and aligned design, ML and content teams on scope",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "PRD writing",
+        "roadmapping"
+       ],
+       "tools": [
+        "Notion"
+       ],
+       "functionTags": [
+        "zero-to-one"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [
+        "aligned 4 teams"
+       ],
+       "rawNotes": null
+      }
+     ]
+    },
+    {
+     "key": "p2",
+     "name": "Onboarding & activation",
+     "oneLiner": "First-week experience for new learners",
+     "ownership": "I led the squad of 3 engineers and 1 designer",
+     "proofUrl": null,
+     "start": "2023-04-01",
+     "end": "2024-03-01",
+     "achievements": [
+      {
+       "key": "a07",
+       "situation": null,
+       "action": "Redesigned onboarding around a 3-minute diagnostic quiz that personalises the study plan",
+       "result": "Day-7 retention improved",
+       "metricValue": "from 21% to 27%",
+       "metricConfidence": "exact",
+       "skills": [
+        "onboarding",
+        "personalisation"
+       ],
+       "tools": [
+        "Amplitude",
+        "Figma"
+       ],
+       "functionTags": [
+        "growth",
+        "design"
+       ],
+       "domainTags": [
+        "edtech",
+        "b2c"
+       ],
+       "senioritySignals": [
+        "led squad of 4"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a08",
+       "situation": null,
+       "action": "Ran 11 A/B tests on onboarding copy, plan length and push permission timing",
+       "result": "Activation rate rose",
+       "metricValue": "14% relative",
+       "metricConfidence": "exact",
+       "skills": [
+        "A/B testing",
+        "experiment design"
+       ],
+       "tools": [
+        "Amplitude",
+        "Firebase A/B Testing"
+       ],
+       "functionTags": [
+        "growth"
+       ],
+       "domainTags": [
+        "b2c"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a09",
+       "situation": null,
+       "action": "Built a lifecycle messaging program of push and email nudges for inactive learners",
+       "result": "Reactivated lapsed learners each month",
+       "metricValue": "~18,000",
+       "metricConfidence": "estimate",
+       "skills": [
+        "lifecycle marketing",
+        "CRM"
+       ],
+       "tools": [
+        "MoEngage"
+       ],
+       "functionTags": [
+        "growth",
+        "gtm"
+       ],
+       "domainTags": [
+        "b2c"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a10",
+       "situation": null,
+       "action": "Defined the activation metric (first completed practice set within 48 hours) and instrumented it with engineering",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "metric design",
+        "instrumentation"
+       ],
+       "tools": [
+        "Amplitude",
+        "SQL"
+       ],
+       "functionTags": [
+        "data",
+        "growth"
+       ],
+       "domainTags": [
+        "b2c"
+       ],
+       "senioritySignals": [
+        "aligned leadership on north-star"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a47",
+       "situation": null,
+       "action": "Added a referral loop that rewards both learners with premium days",
+       "result": "Referred sign-ups each month",
+       "metricValue": "~4,000",
+       "metricConfidence": "estimate",
+       "skills": [
+        "referral programs",
+        "viral loops"
+       ],
+       "tools": [
+        "Branch"
+       ],
+       "functionTags": [
+        "growth"
+       ],
+       "domainTags": [
+        "b2c"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a48",
+       "situation": null,
+       "action": "Improved app store listing screenshots and keywords",
+       "result": "Store conversion rate improved",
+       "metricValue": "11%",
+       "metricConfidence": "exact",
+       "skills": [
+        "app store optimisation"
+       ],
+       "tools": [
+        "App Store Connect",
+        "Google Play Console"
+       ],
+       "functionTags": [
+        "growth",
+        "gtm"
+       ],
+       "domainTags": [
+        "b2c"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    },
+    {
+     "key": "p3",
+     "name": "Teacher dashboard",
+     "oneLiner": "Web dashboard for coaching-centre teachers to track batches",
+     "ownership": "Shared with another PM; I owned analytics and reporting",
+     "proofUrl": null,
+     "start": "2024-04-01",
+     "end": "2025-02-01",
+     "achievements": [
+      {
+       "key": "a11",
+       "situation": null,
+       "action": "Shipped a batch-level progress dashboard for coaching-centre teachers",
+       "result": "Adopted by partner centres in the first term",
+       "metricValue": "120 centres",
+       "metricConfidence": "exact",
+       "skills": [
+        "B2B product",
+        "dashboard design"
+       ],
+       "tools": [
+        "Metabase",
+        "React"
+       ],
+       "functionTags": [
+        "data",
+        "zero-to-one"
+       ],
+       "domainTags": [
+        "edtech",
+        "b2b"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a12",
+       "situation": null,
+       "action": "Interviewed 25 teachers to map their weekly reporting workflow before scoping v1",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "user research"
+       ],
+       "tools": [],
+       "functionTags": [
+        "research"
+       ],
+       "domainTags": [
+        "edtech",
+        "b2b"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a13",
+       "situation": null,
+       "action": "Automated weekly parent reports from the dashboard data",
+       "result": "Saved teachers manual reporting time each week",
+       "metricValue": "about 3 hours per teacher",
+       "metricConfidence": "estimate",
+       "skills": [
+        "automation",
+        "reporting"
+       ],
+       "tools": [
+        "Python",
+        "SendGrid"
+       ],
+       "functionTags": [
+        "ops",
+        "data"
+       ],
+       "domainTags": [
+        "edtech",
+        "b2b"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a14",
+       "situation": null,
+       "action": "Worked with sales to price the dashboard as a paid add-on for centres",
+       "result": "Generated new annual recurring revenue",
+       "metricValue": "₹48 lakh ARR",
+       "metricConfidence": "exact",
+       "skills": [
+        "pricing",
+        "go-to-market"
+       ],
+       "tools": [],
+       "functionTags": [
+        "gtm"
+       ],
+       "domainTags": [
+        "edtech",
+        "b2b"
+       ],
+       "senioritySignals": [
+        "partnered with sales head"
+       ],
+       "rawNotes": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "r2",
+   "company": "Paysetu",
+   "title": "Associate Product Manager",
+   "location": "Mumbai",
+   "start": "2021-06-01",
+   "end": "2023-03-01",
+   "employmentType": "full-time",
+   "companyContext": "Payments platform for small merchants",
+   "projects": [
+    {
+     "key": "p4",
+     "name": "UPI AutoPay",
+     "oneLiner": "Recurring UPI mandates for subscription merchants",
+     "ownership": "I owned the merchant-facing flows; platform team owned the NPCI integration",
+     "proofUrl": null,
+     "start": "2021-09-01",
+     "end": "2022-06-01",
+     "achievements": [
+      {
+       "key": "a15",
+       "situation": null,
+       "action": "Launched UPI AutoPay mandates for subscription merchants",
+       "result": "Processed recurring payments in the first six months",
+       "metricValue": "₹32 crore",
+       "metricConfidence": "exact",
+       "skills": [
+        "payments",
+        "product launch"
+       ],
+       "tools": [
+        "UPI",
+        "NPCI APIs"
+       ],
+       "functionTags": [
+        "zero-to-one"
+       ],
+       "domainTags": [
+        "fintech",
+        "b2b"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a16",
+       "situation": null,
+       "action": "Wrote the mandate lifecycle spec covering creation, pause, revoke and retry states with backend engineers",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "technical specs",
+        "API design"
+       ],
+       "tools": [
+        "Postman",
+        "Swagger"
+       ],
+       "functionTags": [
+        "ops"
+       ],
+       "domainTags": [
+        "fintech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a17",
+       "situation": null,
+       "action": "Diagnosed mandate failures by bank and added smart retry windows",
+       "result": "Mandate success rate improved",
+       "metricValue": "from 71% to 84%",
+       "metricConfidence": "exact",
+       "skills": [
+        "root-cause analysis",
+        "reliability"
+       ],
+       "tools": [
+        "SQL",
+        "Metabase"
+       ],
+       "functionTags": [
+        "data",
+        "ops"
+       ],
+       "domainTags": [
+        "fintech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a18",
+       "situation": null,
+       "action": "Coordinated RBI e-mandate compliance changes with legal and risk teams",
+       "result": "Shipped before the regulatory deadline with zero merchant downtime",
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "compliance",
+        "stakeholder management"
+       ],
+       "tools": [],
+       "functionTags": [
+        "ops"
+       ],
+       "domainTags": [
+        "fintech"
+       ],
+       "senioritySignals": [
+        "coordinated legal and risk"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a49",
+       "situation": null,
+       "action": "Reduced payment latency for mandate execution by batching bank calls with the platform team",
+       "result": "p95 latency fell",
+       "metricValue": "from 4.2s to 1.6s",
+       "metricConfidence": "exact",
+       "skills": [
+        "performance",
+        "platform"
+       ],
+       "tools": [
+        "Kafka"
+       ],
+       "functionTags": [
+        "ops"
+       ],
+       "domainTags": [
+        "fintech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    },
+    {
+     "key": "p5",
+     "name": "Merchant onboarding & KYC",
+     "oneLiner": "Self-serve onboarding for small merchants",
+     "ownership": "I owned the funnel and experiments; 2 engineers",
+     "proofUrl": null,
+     "start": "2022-01-01",
+     "end": "2023-03-01",
+     "achievements": [
+      {
+       "key": "a19",
+       "situation": null,
+       "action": "Rebuilt merchant KYC as a progressive flow with document OCR",
+       "result": "Onboarding completion rose",
+       "metricValue": "from 52% to 66%",
+       "metricConfidence": "exact",
+       "skills": [
+        "funnel optimisation",
+        "KYC"
+       ],
+       "tools": [
+        "OCR API",
+        "Amplitude"
+       ],
+       "functionTags": [
+        "growth"
+       ],
+       "domainTags": [
+        "fintech",
+        "b2b"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a20",
+       "situation": null,
+       "action": "Identified the bank-account verification step as the largest drop-off using funnel analysis",
+       "result": "About 20% of merchants abandoned at that step",
+       "metricValue": "about 20%",
+       "metricConfidence": "estimate",
+       "skills": [
+        "funnel analysis"
+       ],
+       "tools": [
+        "SQL",
+        "Metabase"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "fintech"
+       ],
+       "senioritySignals": [
+        "presented findings to founder"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a21",
+       "situation": null,
+       "action": "Cut average onboarding time for merchants by auto-filling GST details",
+       "result": "Onboarding time dropped",
+       "metricValue": "from 2 days to 4 hours",
+       "metricConfidence": "exact",
+       "skills": [
+        "automation"
+       ],
+       "tools": [
+        "GST API"
+       ],
+       "functionTags": [
+        "ops"
+       ],
+       "domainTags": [
+        "fintech",
+        "b2b"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a22",
+       "situation": null,
+       "action": "Ran 6 experiments on onboarding nudges via WhatsApp and SMS",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "A/B testing"
+       ],
+       "tools": [
+        "Gupshup"
+       ],
+       "functionTags": [
+        "growth"
+       ],
+       "domainTags": [
+        "fintech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    },
+    {
+     "key": "p6",
+     "name": "Payouts reconciliation",
+     "oneLiner": "Automated settlement reconciliation for merchant payouts",
+     "ownership": "I owned requirements; finance-ops and 2 engineers",
+     "proofUrl": null,
+     "start": "2022-07-01",
+     "end": "2023-03-01",
+     "achievements": [
+      {
+       "key": "a23",
+       "situation": null,
+       "action": "Automated daily settlement reconciliation between bank statements and the payouts ledger",
+       "result": "Eliminated most manual reconciliation work for finance ops",
+       "metricValue": "~90% of entries auto-matched",
+       "metricConfidence": "estimate",
+       "skills": [
+        "reconciliation",
+        "process automation"
+       ],
+       "tools": [
+        "Python",
+        "SQL"
+       ],
+       "functionTags": [
+        "ops",
+        "data"
+       ],
+       "domainTags": [
+        "fintech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a24",
+       "situation": null,
+       "action": "Defined payout SLAs and an alerting dashboard for delayed settlements",
+       "result": "Delayed payouts were caught the same day instead of after merchant complaints",
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "SLA design",
+        "monitoring"
+       ],
+       "tools": [
+        "Grafana",
+        "Metabase"
+       ],
+       "functionTags": [
+        "ops"
+       ],
+       "domainTags": [
+        "fintech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a25",
+       "situation": null,
+       "action": "Built a dispute-tracking workflow for merchants with failed payouts",
+       "result": "Merchant support tickets on payouts fell",
+       "metricValue": "31%",
+       "metricConfidence": "exact",
+       "skills": [
+        "workflow design"
+       ],
+       "tools": [
+        "Freshdesk"
+       ],
+       "functionTags": [
+        "ops"
+       ],
+       "domainTags": [
+        "fintech",
+        "b2b"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "r3",
+   "company": "Kartly",
+   "title": "Product Analyst",
+   "location": "Gurugram",
+   "start": "2019-07-01",
+   "end": "2021-05-01",
+   "employmentType": "full-time",
+   "companyContext": "Fashion e-commerce marketplace",
+   "projects": [
+    {
+     "key": "p7",
+     "name": "Checkout conversion analytics",
+     "oneLiner": "Analytics for the cart-to-order funnel",
+     "ownership": "I owned the analysis; partnered with checkout PM",
+     "proofUrl": null,
+     "start": "2019-07-01",
+     "end": "2020-06-01",
+     "achievements": [
+      {
+       "key": "a26",
+       "situation": null,
+       "action": "Built the checkout funnel dashboard used in the weekly business review",
+       "result": "Became the source of truth for conversion metrics across 4 product teams",
+       "metricValue": "4 teams",
+       "metricConfidence": "exact",
+       "skills": [
+        "dashboarding",
+        "metric design"
+       ],
+       "tools": [
+        "Tableau",
+        "SQL",
+        "BigQuery"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "e-commerce",
+        "b2c"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a27",
+       "situation": null,
+       "action": "Found that COD-eligibility checks were slowing checkout on low-end Android devices",
+       "result": "Fix lifted checkout conversion",
+       "metricValue": "2.3 percentage points",
+       "metricConfidence": "exact",
+       "skills": [
+        "root-cause analysis",
+        "performance analysis"
+       ],
+       "tools": [
+        "BigQuery",
+        "Firebase Performance"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a28",
+       "situation": null,
+       "action": "Modelled the revenue impact of free-shipping thresholds for the pricing team",
+       "result": "Recommended threshold was adopted and raised average order value",
+       "metricValue": "~6%",
+       "metricConfidence": "estimate",
+       "skills": [
+        "pricing analysis",
+        "modelling"
+       ],
+       "tools": [
+        "Python",
+        "Excel"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [
+        "presented to category heads"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a29",
+       "situation": null,
+       "action": "Wrote SQL training sessions for product managers",
+       "result": null,
+       "metricValue": "30 PMs trained",
+       "metricConfidence": "exact",
+       "skills": [
+        "SQL",
+        "training"
+       ],
+       "tools": [
+        "BigQuery"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [],
+       "senioritySignals": [
+        "ran company-wide training"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a50",
+       "situation": null,
+       "action": "Built cohort retention curves for new customers by acquisition channel",
+       "result": "Marketing shifted budget away from the lowest-retaining channel",
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "cohort analysis",
+        "retention analysis"
+       ],
+       "tools": [
+        "SQL",
+        "Tableau"
+       ],
+       "functionTags": [
+        "data",
+        "growth"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    },
+    {
+     "key": "p8",
+     "name": "Experimentation platform",
+     "oneLiner": "In-house A/B testing and analysis tooling",
+     "ownership": "Co-built with a data engineer; I owned the stats methodology",
+     "proofUrl": null,
+     "start": "2020-03-01",
+     "end": "2021-05-01",
+     "achievements": [
+      {
+       "key": "a30",
+       "situation": null,
+       "action": "Standardised A/B test analysis with power calculations and sequential testing guardrails",
+       "result": "Reduced false-positive launches flagged in post-launch reviews",
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "experimentation",
+        "statistics",
+        "hypothesis testing"
+       ],
+       "tools": [
+        "Python",
+        "statsmodels"
+       ],
+       "functionTags": [
+        "data",
+        "research"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a31",
+       "situation": null,
+       "action": "Built a self-serve experiment readout template in the BI tool",
+       "result": "Cut analysis turnaround per experiment",
+       "metricValue": "from 5 days to 1 day",
+       "metricConfidence": "exact",
+       "skills": [
+        "experimentation",
+        "dashboarding"
+       ],
+       "tools": [
+        "Looker",
+        "SQL"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a32",
+       "situation": null,
+       "action": "Reviewed experiment designs for 8 product squads as the analytics point of contact",
+       "result": "Supported about 120 experiments a year",
+       "metricValue": "about 120 a year",
+       "metricConfidence": "estimate",
+       "skills": [
+        "experiment design",
+        "stakeholder management"
+       ],
+       "tools": [],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [
+        "analytics point of contact for 8 squads"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a33",
+       "situation": null,
+       "action": "Built a dbt model layer for experiment exposure and conversion events",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "data modelling"
+       ],
+       "tools": [
+        "dbt",
+        "BigQuery"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a51",
+       "situation": null,
+       "action": "Documented an experimentation playbook for PMs covering hypothesis, metrics and stopping rules",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "experimentation",
+        "documentation"
+       ],
+       "tools": [
+        "Confluence"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    },
+    {
+     "key": "p9",
+     "name": "Returns analysis",
+     "oneLiner": "Root causes of high fashion return rates",
+     "ownership": "Solo analysis",
+     "proofUrl": null,
+     "start": "2020-01-01",
+     "end": "2020-09-01",
+     "achievements": [
+      {
+       "key": "a34",
+       "situation": null,
+       "action": "Analysed 2 million return records to find size-mismatch as the top return reason",
+       "result": "Led to a size-recommendation feature that lowered returns in pilot categories",
+       "metricValue": "~8%",
+       "metricConfidence": "estimate",
+       "skills": [
+        "deep-dive analysis"
+       ],
+       "tools": [
+        "BigQuery",
+        "Python"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a35",
+       "situation": null,
+       "action": "Built a returns-risk score used by the catalogue team to flag listings with poor size charts",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "predictive modelling"
+       ],
+       "tools": [
+        "Python",
+        "scikit-learn"
+       ],
+       "functionTags": [
+        "data",
+        "ai-ml"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a36",
+       "situation": null,
+       "action": "Presented returns insights to category leadership with a prioritised fix list",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "storytelling",
+        "stakeholder management"
+       ],
+       "tools": [
+        "Google Slides"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "e-commerce"
+       ],
+       "senioritySignals": [
+        "presented to leadership"
+       ],
+       "rawNotes": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "r4",
+   "company": "MedLink Health",
+   "title": "Business Analyst Intern",
+   "location": "Pune",
+   "start": "2019-01-01",
+   "end": "2019-06-01",
+   "employmentType": "intern",
+   "companyContext": "Hospital operations software",
+   "projects": [
+    {
+     "key": "p10",
+     "name": "Bed occupancy dashboard",
+     "oneLiner": "Occupancy reporting for hospital administrators",
+     "ownership": "Intern project with a senior analyst",
+     "proofUrl": null,
+     "start": "2019-01-01",
+     "end": "2019-06-01",
+     "achievements": [
+      {
+       "key": "a37",
+       "situation": null,
+       "action": "Built a bed-occupancy dashboard for hospital administrators",
+       "result": "Used daily by administrators at pilot hospitals",
+       "metricValue": "3 hospitals",
+       "metricConfidence": "exact",
+       "skills": [
+        "dashboarding",
+        "healthcare analytics"
+       ],
+       "tools": [
+        "Power BI",
+        "SQL"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "healthcare",
+        "b2b"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a38",
+       "situation": null,
+       "action": "Prototyped a 7-day occupancy forecast with a senior analyst",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "forecasting"
+       ],
+       "tools": [
+        "Python",
+        "Prophet"
+       ],
+       "functionTags": [
+        "data",
+        "ai-ml"
+       ],
+       "domainTags": [
+        "healthcare"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a39",
+       "situation": null,
+       "action": "Interviewed nurses and administrators to map discharge bottlenecks",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "user research"
+       ],
+       "tools": [],
+       "functionTags": [
+        "research"
+       ],
+       "domainTags": [
+        "healthcare"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a52",
+       "situation": null,
+       "action": "Cleaned and joined admission and discharge data from 2 hospital systems for reporting",
+       "result": null,
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "data cleaning"
+       ],
+       "tools": [
+        "Excel",
+        "SQL"
+       ],
+       "functionTags": [
+        "data"
+       ],
+       "domainTags": [
+        "healthcare"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "sideProjects": [
+  {
+   "key": "p11",
+   "name": "Resume Ranker",
+   "oneLiner": "Open-source tool that scores resumes against job descriptions",
+   "ownership": "Solo side project",
+   "proofUrl": "https://github.com/example/resume-ranker",
+   "start": "2024-06-01",
+   "end": "2024-09-01",
+   "achievements": [
+    {
+     "key": "a40",
+     "situation": null,
+     "action": "Built a resume–JD matcher using embeddings and a keyword-coverage score",
+     "result": "Reached users in the first month after a LinkedIn post",
+     "metricValue": "300 users",
+     "metricConfidence": "exact",
+     "skills": [
+      "embeddings",
+      "NLP"
+     ],
+     "tools": [
+      "Python",
+      "Streamlit",
+      "OpenAI embeddings"
+     ],
+     "functionTags": [
+      "ai-ml",
+      "zero-to-one"
+     ],
+     "domainTags": [
+      "hr-tech"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    },
+    {
+     "key": "a41",
+     "situation": null,
+     "action": "Added an LLM-graded feedback mode and an evaluation set of 50 labelled resume–JD pairs",
+     "result": null,
+     "metricValue": null,
+     "metricConfidence": "none",
+     "skills": [
+      "LLM evals",
+      "prompt design"
+     ],
+     "tools": [
+      "GPT-4",
+      "Python"
+     ],
+     "functionTags": [
+      "ai-ml"
+     ],
+     "domainTags": [],
+     "senioritySignals": [],
+     "rawNotes": null
+    },
+    {
+     "key": "a42",
+     "situation": null,
+     "action": "Open-sourced the project with docs and a demo",
+     "result": "Received GitHub stars",
+     "metricValue": "120 stars",
+     "metricConfidence": "exact",
+     "skills": [
+      "open source",
+      "documentation"
+     ],
+     "tools": [
+      "GitHub"
+     ],
+     "functionTags": [
+      "gtm"
+     ],
+     "domainTags": [],
+     "senioritySignals": [],
+     "rawNotes": null
+    }
+   ]
+  },
+  {
+   "key": "p12",
+   "name": "Habit nudge bot",
+   "oneLiner": "WhatsApp bot that sends personalised habit reminders",
+   "ownership": "Built with a friend; I did product and the LLM prompts",
+   "proofUrl": null,
+   "start": "2023-01-01",
+   "end": "2023-05-01",
+   "achievements": [
+    {
+     "key": "a43",
+     "situation": null,
+     "action": "Built a WhatsApp habit-reminder bot with LLM-personalised nudges",
+     "result": "Retained beta users after 4 weeks",
+     "metricValue": "~60%",
+     "metricConfidence": "estimate",
+     "skills": [
+      "conversational design",
+      "LLM product design"
+     ],
+     "tools": [
+      "Twilio",
+      "GPT-3.5",
+      "Node.js"
+     ],
+     "functionTags": [
+      "ai-ml",
+      "zero-to-one"
+     ],
+     "domainTags": [
+      "b2c",
+      "health"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    },
+    {
+     "key": "a44",
+     "situation": null,
+     "action": "Ran a 4-week beta with 80 users and weekly feedback calls",
+     "result": null,
+     "metricValue": null,
+     "metricConfidence": "none",
+     "skills": [
+      "user research",
+      "beta testing"
+     ],
+     "tools": [
+      "Google Forms"
+     ],
+     "functionTags": [
+      "research"
+     ],
+     "domainTags": [
+      "b2c"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    }
+   ]
+  }
+ ],
+ "education": [
+  {
+   "institution": "IIT Bombay",
+   "degree": "B.Tech",
+   "field": "Mechanical Engineering",
+   "start": "2015-07-01",
+   "end": "2019-05-01",
+   "grade": "CPI 8.4",
+   "highlights": []
+  }
+ ],
+ "extras": [
+  {
+   "kind": "award",
+   "title": "Lumio Product Excellence Award",
+   "issuer": "Lumio",
+   "date": "2024-03-01",
+   "description": "For the AI Study Coach launch",
+   "tags": [
+    "ai",
+    "llm",
+    "edtech"
+   ]
+  },
+  {
+   "kind": "certification",
+   "title": "Google Data Analytics Certificate",
+   "issuer": "Google",
+   "date": "2020-02-01",
+   "description": null,
+   "tags": [
+    "sql",
+    "analytics",
+    "data"
+   ]
+  },
+  {
+   "kind": "leadership",
+   "title": "Mentor, Product Folks community",
+   "issuer": "Product Folks",
+   "date": "2023-01-01",
+   "description": "Mentored 15 aspiring PMs",
+   "tags": [
+    "mentoring",
+    "product management"
+   ]
+  },
+  {
+   "kind": "publication",
+   "title": "How we evaluate an AI tutor",
+   "issuer": "Lumio Engineering Blog",
+   "date": "2024-08-01",
+   "description": "Blog post on LLM evals",
+   "tags": [
+    "llm evals",
+    "ai"
+   ]
+  }
+ ]
+}

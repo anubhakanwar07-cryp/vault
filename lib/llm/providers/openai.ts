@@ -1,10 +1,10 @@
 import OpenAI from 'openai';
 import type { CompletionRequest, CompletionResponse, LLMProvider } from '../types';
 
-// SPEC-QUESTION: GPT-5-family and o-series reasoning models reject a custom temperature,
-// so it's omitted for them. The spec's temperature targets (0.2 / 0.5) only apply to models that accept it.
-function acceptsTemperature(model: string): boolean {
-  return !/^(gpt-5|gpt-6|o\d)/.test(model);
+// GPT-5+/o-series are reasoning models. With reasoning_effort 'none' they accept a custom
+// temperature (so SPEC's 0.2 / 0.5 apply); with any other effort only the default temperature works.
+function isReasoningModel(model: string): boolean {
+  return /^(gpt-5|gpt-6|o\d)/.test(model);
 }
 
 export function createOpenAIProvider(apiKey: string): LLMProvider {
@@ -18,7 +18,14 @@ export function createOpenAIProvider(apiKey: string): LLMProvider {
         messages: [{ role: 'system', content: req.system }, ...req.messages],
         max_completion_tokens: req.maxTokens,
         response_format: { type: 'json_object' },
-        ...(acceptsTemperature(req.model) ? { temperature: req.temperature } : {}),
+        ...(isReasoningModel(req.model)
+          ? {
+              reasoning_effort: req.reasoningEffort ?? 'none',
+              ...((req.reasoningEffort ?? 'none') === 'none'
+                ? { temperature: req.temperature }
+                : {}),
+            }
+          : { temperature: req.temperature }),
       });
       return {
         text: res.choices[0]?.message.content ?? '',
