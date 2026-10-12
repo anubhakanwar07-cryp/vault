@@ -35,9 +35,17 @@ async function run<T>(fn: (userId: string) => Promise<T>): Promise<ActionResult<
 }
 
 export async function editBulletAction(resumeId: string, bulletId: string, text: string) {
-  return run<EditResult>((u) =>
-    editBullet(u, id.parse(resumeId), id.parse(bulletId), z.string().max(600).parse(text)),
-  );
+  return run<EditResult>(async (u) => {
+    const res = await editBullet(
+      u,
+      id.parse(resumeId),
+      id.parse(bulletId),
+      z.string().max(600).parse(text),
+    );
+    // Learn from edits without slowing the editor down (SPEC §9.9: every 5 new edits).
+    after(() => maybeDeriveStyleRules(u));
+    return res;
+  });
 }
 export async function regenerateBulletAction(resumeId: string, bulletId: string) {
   return run<EditResult>((u) => regenerateBullet(u, id.parse(resumeId), id.parse(bulletId)));
