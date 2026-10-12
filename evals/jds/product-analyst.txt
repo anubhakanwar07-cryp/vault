@@ -1,0 +1,22 @@
+Product Analyst — Cartwheel Commerce (late-stage e-commerce, Gurugram)
+
+Cartwheel is one of India's largest fashion e-commerce platforms. The Product Analytics team partners with product managers to decide what to build and to measure whether it worked.
+
+Responsibilities
+- Build and maintain dashboards for product health metrics (conversion, AOV, returns)
+- Design and analyse A/B experiments with product and engineering teams
+- Perform deep-dive analyses on user behaviour to identify opportunities and root causes
+- Define metrics and instrumentation requirements for new features
+- Present insights to product leadership with clear recommendations
+
+Requirements
+- 1–3 years of experience in product analytics, business analytics or data science
+- Advanced SQL; experience with large datasets (BigQuery, Redshift or Snowflake)
+- Experience with experimentation and statistics (hypothesis testing, power analysis)
+- Proficiency in a BI tool such as Tableau, Looker or Metabase
+- Python or R for analysis
+
+Preferred
+- E-commerce or marketplace experience
+- Experience with dbt or data modelling
+- Bachelor's degree in engineering, statistics, economics or a related field

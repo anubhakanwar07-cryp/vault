@@ -1,0 +1,20 @@
+Product Manager, Data & Insights — CareGrid Health (enterprise healthcare SaaS, Pune / Remote)
+
+CareGrid provides hospital operations software to 300 hospitals. The Data & Insights team builds analytics products that help hospital administrators reduce wait times and improve bed utilisation.
+
+You will
+- Own the analytics product: dashboards, alerts and forecasting features for hospital administrators
+- Work with data engineers and data scientists to ship forecasting models (bed occupancy, staffing)
+- Translate messy operational problems into clear product requirements
+- Ensure data privacy and compliance with healthcare regulations (HIPAA-equivalent, DPDP Act)
+- Conduct customer interviews with hospital administrators and nurses
+
+We are looking for
+- 3+ years of product management experience with data or analytics products
+- Comfort with data modelling concepts and SQL
+- Experience working with data scientists on ML or forecasting features
+- Experience selling to or working with enterprise customers
+
+Nice to have
+- Healthcare domain experience
+- Experience with BI tools (Power BI, Tableau)

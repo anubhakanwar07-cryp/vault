@@ -1,0 +1,26 @@
+Product Manager, AI Learning Experiences — Brightpath Learning (Series B, Bengaluru / Hybrid)
+
+About us: Brightpath helps 3 million K-12 students in India learn maths and science through adaptive practice. We've raised a Series B and are building an AI tutor that explains concepts the way a great teacher would.
+
+The role: You'll own the AI tutor end to end — from discovery with students and teachers to shipping LLM-powered features and proving they improve learning outcomes. You'll work with 6 engineers, an ML engineer and a designer.
+
+What you'll do
+- Define the roadmap for our AI tutor and conversational practice features
+- Design evaluation frameworks for LLM output quality (accuracy, pedagogy, safety) and run them before every release
+- Run experiments and A/B tests to measure impact on learning and retention
+- Work with ML engineers on prompt design, retrieval and model selection trade-offs (cost, latency, quality)
+- Partner with content and curriculum teams to ensure explanations are correct and age-appropriate
+- Communicate progress to leadership and translate metrics into decisions
+
+You must have
+- 2+ years of product management experience, ideally in consumer or edtech products
+- Hands-on experience shipping LLM or ML-powered features
+- Strong analytical skills: comfortable with SQL and experiment design
+- Experience defining success metrics and evaluation criteria for AI systems
+
+Nice to have
+- Experience in edtech or working with students/teachers
+- Familiarity with Python for prototyping
+- Experience with retrieval-augmented generation (RAG)
+
+Must be able to work from our Bengaluru office 3 days a week.

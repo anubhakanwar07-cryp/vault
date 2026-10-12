@@ -1,0 +1,22 @@
+Growth Product Manager — Habitly (early-stage consumer app, remote India)
+
+Habitly is a habit-tracking app with 800k downloads, backed by top seed investors. We're hiring our first Growth PM to own activation and retention.
+
+What you'll own
+- The full funnel from install to habit formation: onboarding, activation, retention, referrals
+- A high-velocity experimentation program — we expect 4–6 experiments a month
+- Lifecycle messaging: push notifications, email and in-app nudges
+- Growth analytics: cohort analysis, funnel diagnostics, retention curves
+- Working with one designer and three engineers in a small, scrappy team
+
+You should have
+- 2–4 years in growth, product or analytics roles at a consumer internet company
+- A track record of running A/B tests that moved activation or retention metrics
+- Fluency with product analytics tools such as Amplitude, Mixpanel or similar
+- Comfort with SQL for your own analysis
+- Strong copywriting instincts for onboarding and notifications
+
+Bonus
+- Experience with referral or viral loops
+- Experience with app store optimisation
+- Familiarity with no-code tools for fast prototyping

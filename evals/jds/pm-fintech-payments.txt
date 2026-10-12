@@ -1,0 +1,23 @@
+Senior Product Manager — Payments Platform, Ledgerly (Growth stage fintech, Mumbai)
+
+Ledgerly powers payments for 40,000 small businesses across India. Our Payments Platform team builds UPI collections, payouts and reconciliation used by every product in the company.
+
+Responsibilities
+- Own the payments platform roadmap: UPI AutoPay, payouts, and settlement reconciliation
+- Reduce payment failure rates and improve success rates across banks and PSPs
+- Work closely with engineering on API design, reliability and scale
+- Drive compliance work with RBI guidelines together with legal and risk teams
+- Partner with merchant-facing product teams who build on top of the platform
+- Define and track platform KPIs: success rate, latency, settlement time, cost per transaction
+
+Requirements
+- 5+ years of product management, with at least 2 years on payments, fintech or platform/API products
+- Deep understanding of UPI, card networks, or payment gateway infrastructure
+- Experience writing technical specs and working with backend engineering teams
+- Strong data skills — you can write SQL and build your own dashboards
+- Excellent stakeholder management across risk, compliance and business teams
+
+Good to have
+- Experience with KYC / onboarding flows
+- Prior experience in a B2B SaaS company
+- MBA or engineering degree
