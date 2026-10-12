@@ -306,6 +306,8 @@ export const applications = pgTable(
     jobId: uuid('job_id').references(() => jobs.id, { onDelete: 'set null' }),
     resumeId: uuid('resume_id').references(() => resumes.id, { onDelete: 'set null' }),
     isTailored: boolean('is_tailored').notNull().default(true),
+    // SPEC-QUESTION: not in §5; needed to split callback rates by role family for baseline applications.
+    roleFamily: text('role_family'),
     appliedAt: date('applied_at'),
     channel: text('channel', { enum: ['portal', 'referral', 'cold-email', 'linkedin'] }),
     status: text('status', {

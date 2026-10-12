@@ -22,6 +22,13 @@
       "when": 1791818112082,
       "tag": "0002_vault_sources",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791821254803,
+      "tag": "0003_application_role_family",
+      "breakpoints": true
     }
   ]
 }

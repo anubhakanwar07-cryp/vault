@@ -1,14 +1,21 @@
 import { Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { CallbackWidget } from '@/components/tracker/callback-widget';
 import { buttonVariants } from '@/components/ui/button';
 import { ScoreBar } from '@/components/vault/score-bar';
 import { requireUser } from '@/lib/auth';
+import { listApplications } from '@/lib/db/queries/applications';
 import { getProfile, getVaultTree } from '@/lib/db/queries/vault';
+import { callbackStats } from '@/lib/tracker/stats';
 import { average, DEEPEN_THRESHOLD } from '@/lib/vault/completeness';
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  const [tree, profile] = await Promise.all([getVaultTree(user.id), getProfile(user.id)]);
+  const [tree, profile, apps] = await Promise.all([
+    getVaultTree(user.id),
+    getProfile(user.id),
+    listApplications(user.id),
+  ]);
 
   const projects = [
     ...tree.roles.flatMap((r) =>
@@ -42,6 +49,18 @@ export default async function DashboardPage() {
           </Link>
         </div>
       )}
+
+      <section className="flex flex-col items-start gap-2 rounded-xl border p-4">
+        <h2 className="font-semibold">Tailor a resume</h2>
+        <p className="text-sm text-muted-foreground">
+          Paste a job description and get a one-page resume built from your vault.
+        </p>
+        <Link href="/tailor/new" className={buttonVariants({ size: 'sm' })}>
+          New tailored resume
+        </Link>
+      </section>
+
+      <CallbackWidget stats={callbackStats(apps)} />
 
       <section className="flex flex-col gap-3 rounded-xl border p-4">
         <div className="flex items-center justify-between">

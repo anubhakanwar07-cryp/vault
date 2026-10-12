@@ -1,7 +1,7 @@
 import 'server-only';
 import { asc, desc, eq } from 'drizzle-orm';
 import { withUser } from '@/lib/db/client';
-import { resumeBullets, resumes } from '@/lib/db/schema';
+import { jobs, resumeBullets, resumes } from '@/lib/db/schema';
 import { recruiterSimOutput, type RecruiterSim } from '@/lib/llm/schemas/pipeline';
 import { matchReport, resumeDoc, type MatchReport, type ResumeDoc } from '@/lib/resume/types';
 
@@ -51,5 +51,23 @@ export async function listResumeVersions(userId: string, jobId: string) {
       .from(resumes)
       .where(eq(resumes.jobId, jobId))
       .orderBy(desc(resumes.version)),
+  );
+}
+
+/** Resume versions the user can attach to an application (newest first). */
+export async function listResumesForLinking(userId: string, limit = 50) {
+  return withUser(userId, (tx) =>
+    tx
+      .select({
+        id: resumes.id,
+        version: resumes.version,
+        status: resumes.status,
+        company: jobs.company,
+        roleTitle: jobs.roleTitle,
+      })
+      .from(resumes)
+      .innerJoin(jobs, eq(jobs.id, resumes.jobId))
+      .orderBy(desc(resumes.createdAt))
+      .limit(limit),
   );
 }

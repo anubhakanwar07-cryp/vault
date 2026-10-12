@@ -1,9 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { z } from 'zod';
 import type { ActionResult } from '@/lib/actions';
 import { requireUser } from '@/lib/auth';
+import { maybeDeriveStyleRules } from '@/lib/learning/style-rules';
 import {
   alternativesFor,
   deleteBullet,

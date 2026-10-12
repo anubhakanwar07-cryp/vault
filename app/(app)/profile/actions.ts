@@ -1,9 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { invalid, type ActionResult } from '@/lib/actions';
 import { requireUser } from '@/lib/auth';
 import { upsertProfile } from '@/lib/db/queries/vault';
+import { deleteStyleRule, setStyleRuleActive } from '@/lib/learning/style-rules';
 import { profileInput } from '@/lib/llm/schemas/vault';
 
 /** Links arrive as plain URLs from the tag input; the visible label is the URL without protocol (SPEC §11). */
@@ -27,4 +29,18 @@ export async function saveProfileAction(
   revalidatePath('/profile');
   revalidatePath('/dashboard');
   return { ok: true, data: user.id };
+}
+
+export async function toggleStyleRuleAction(id: string, active: boolean): Promise<ActionResult> {
+  const user = await requireUser();
+  await setStyleRuleActive(user.id, z.uuid().parse(id), active);
+  revalidatePath('/profile');
+  return { ok: true, data: undefined };
+}
+
+export async function deleteStyleRuleAction(id: string): Promise<ActionResult> {
+  const user = await requireUser();
+  await deleteStyleRule(user.id, z.uuid().parse(id));
+  revalidatePath('/profile');
+  return { ok: true, data: undefined };
 }
