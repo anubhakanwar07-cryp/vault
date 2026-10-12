@@ -1,0 +1,4 @@
+Data Analyst, Hospital Operations — MediFlow (healthcare SaaS)
+Build reporting and forecasting for hospital administrators.
+You will build dashboards on occupancy and wait times, clean and join hospital system data, prototype forecasts, and interview hospital staff to understand workflows.
+Requirements: 0–2 years analytics; SQL; Power BI or Tableau; Python for forecasting; healthcare interest.

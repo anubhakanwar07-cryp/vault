@@ -1,0 +1,22 @@
+{
+ "name": "ai-pm-llm-platform",
+ "jd_file": "evals/jds/ai-pm-llm-platform.txt",
+ "expected_role_family": "ai_pm",
+ "expected_must_have_keywords": [
+  "LLM",
+  "evaluation",
+  "RAG"
+ ],
+ "ideal_achievement_ids": [
+  "a01",
+  "a02",
+  "a03",
+  "a04",
+  "a45",
+  "a06",
+  "a41",
+  "a40",
+  "a46",
+  "a05"
+ ]
+}

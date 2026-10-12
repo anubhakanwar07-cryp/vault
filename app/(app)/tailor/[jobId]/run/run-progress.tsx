@@ -27,7 +27,9 @@ export function RunProgress({ jobId }: { jobId: string }) {
   const opened = useRef(false);
 
   useEffect(() => {
-    if (opened.current) return; // React dev double-mount must not start two runs
+    // Opened once per page view. Deliberately not closed on effect cleanup: React's dev double-mount
+    // would otherwise kill the stream; it closes itself when the run finishes.
+    if (opened.current) return;
     opened.current = true;
     const es = new EventSource(`/api/tailor/${jobId}/stream`);
     es.onmessage = (msg) => {
@@ -49,10 +51,10 @@ export function RunProgress({ jobId }: { jobId: string }) {
       es.close();
       setError(
         (cur) =>
-          cur ?? 'Lost connection to the server. Refresh to check whether your resume finished.',
+          cur ??
+          'Lost connection to the server. Refresh — if your resume finished, you’ll be taken to it.',
       );
     };
-    return () => es.close();
   }, [jobId, router]);
 
   return (

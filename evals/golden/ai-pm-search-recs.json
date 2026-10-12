@@ -1,0 +1,23 @@
+{
+ "name": "ai-pm-search-recs",
+ "jd_file": "evals/jds/ai-pm-search-recs.txt",
+ "expected_role_family": "ai_pm",
+ "expected_must_have_keywords": [
+  "embeddings",
+  "A/B",
+  "ranking"
+ ],
+ "ideal_achievement_ids": [
+  "a40",
+  "a03",
+  "a30",
+  "a31",
+  "a27",
+  "a26",
+  "a34",
+  "a35",
+  "a08",
+  "a01",
+  "a28"
+ ]
+}

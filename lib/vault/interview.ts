@@ -59,6 +59,7 @@ export async function runInterviewTurn(
     userId,
     temperature: 0.4,
     maxTokens: 8000,
+    timeoutMs: 90_000,
   });
   if (!out.done) return { done: false, question: out.question };
 

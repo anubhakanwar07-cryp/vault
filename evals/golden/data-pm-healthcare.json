@@ -1,0 +1,22 @@
+{
+ "name": "data-pm-healthcare",
+ "jd_file": "evals/jds/data-pm-healthcare.txt",
+ "expected_role_family": "pm",
+ "expected_must_have_keywords": [
+  "data",
+  "SQL",
+  "forecasting"
+ ],
+ "ideal_achievement_ids": [
+  "a37",
+  "a38",
+  "a39",
+  "a52",
+  "a11",
+  "a13",
+  "a26",
+  "a31",
+  "a12",
+  "a35"
+ ]
+}

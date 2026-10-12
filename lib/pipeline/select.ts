@@ -31,8 +31,14 @@ export const METRIC_BONUS = 1.15;
 export const REDUNDANCY_WEIGHT = 0.3;
 /** Side projects need value ≥ this × median value of picked work bullets (plan default). */
 export const SIDE_PROJECT_RATIO = 0.5;
-/** Depth-fill candidates need value ≥ this × the best candidate's value. */
+/**
+ * Depth-fill candidates need value ≥ this × the best candidate's value, and clear evidence (≥ this
+ * score) for at least one must-have. Chosen by replaying stored eval scores (scripts/tune-select.ts):
+ * stricter fills raise precision against the golden ideals only slightly but cut recall below the
+ * 60% target once LLM scoring variance is accounted for.
+ */
 export const FILL_MIN_RATIO = 0.25;
+export const FILL_MIN_MUST_SCORE = 2;
 /** Tag overlap at which two bullets count as near-identical and never both appear. */
 export const NEAR_DUPLICATE = 0.8;
 const GAP_YEARS = 3;
@@ -44,6 +50,10 @@ export type SelectInput = {
   records: AchievementRecord[];
   budget?: Budget;
   today?: Date;
+  /** Override FILL_MIN_RATIO (used by offline tuning). */
+  fillMinRatio?: number;
+  /** Override FILL_MIN_MUST_SCORE (used by offline tuning). */
+  fillMinMustScore?: number;
 };
 
 const YEAR_MS = 365.25 * 24 * 3600 * 1000;
@@ -176,8 +186,18 @@ export function select(input: SelectInput): Selection {
     let bestScore = EPS;
     for (const a of records) {
       const v = value.get(a.id)!;
-      if (picked.includes(a.id) || v < FILL_MIN_RATIO * maxValue || v <= EPS || !fits(a)) continue;
+      if (
+        picked.includes(a.id) ||
+        v < (input.fillMinRatio ?? FILL_MIN_RATIO) * maxValue ||
+        v <= EPS ||
+        !fits(a)
+      )
+        continue;
       if (redundancy(a.id) >= NEAR_DUPLICATE) continue;
+      // Depth fill only adds real evidence for something the JD requires.
+      const minMust = input.fillMinMustScore ?? FILL_MIN_MUST_SCORE;
+      if (!reqs.some((r) => r.kind === 'must' && scoreOf(input.matrix, a.id, r.id) >= minMust))
+        continue;
       const adjusted = v * (1 - REDUNDANCY_WEIGHT * redundancy(a.id));
       if (
         adjusted > bestScore + EPS ||

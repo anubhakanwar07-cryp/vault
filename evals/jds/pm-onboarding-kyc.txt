@@ -1,0 +1,4 @@
+Product Manager, Onboarding — Lendwise (growth stage lending)
+Own the borrower onboarding funnel including KYC and document verification.
+Responsibilities: improve funnel completion; run experiments on onboarding steps; integrate verification partners; work with risk and compliance; reduce time-to-approve.
+Requirements: 2–5 years PM; funnel optimisation experience; KYC or fintech onboarding experience; A/B testing; SQL and analytics tools.

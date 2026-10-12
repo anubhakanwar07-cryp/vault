@@ -1,0 +1,4 @@
+Experimentation Analyst — Zestly (consumer internet)
+Own experiment design and analysis standards across product teams.
+Responsibilities: review experiment designs; power analysis; sequential testing guardrails; build self-serve readouts; train PMs; model data with dbt.
+Requirements: 2+ years analytics/data science; statistics and hypothesis testing; SQL; dbt; Python.

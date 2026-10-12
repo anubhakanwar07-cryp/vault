@@ -1,0 +1,22 @@
+{
+ "name": "pm-b2b-saas-dashboards",
+ "jd_file": "evals/jds/pm-b2b-saas-dashboards.txt",
+ "expected_role_family": "pm",
+ "expected_must_have_keywords": [
+  "dashboard",
+  "B2B",
+  "pricing"
+ ],
+ "ideal_achievement_ids": [
+  "a11",
+  "a12",
+  "a13",
+  "a14",
+  "a26",
+  "a37",
+  "a10",
+  "a24",
+  "a31",
+  "a39"
+ ]
+}

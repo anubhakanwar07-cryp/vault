@@ -1,0 +1,4 @@
+Product Manager, Payments Reliability — Paybridge (fintech, Mumbai)
+Improve payment success rates and reduce failures across UPI and cards.
+You will: analyse failure data by bank and PSP; design retry and routing strategies; work with platform engineers on latency and reliability; manage compliance changes with risk and legal; own merchant-facing dispute flows.
+Requirements: 3+ years PM; payments or UPI experience; strong SQL and root-cause analysis; experience with compliance (RBI) a plus.

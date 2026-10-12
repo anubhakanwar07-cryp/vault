@@ -1,0 +1,21 @@
+{
+ "name": "analyst-experimentation",
+ "jd_file": "evals/jds/analyst-experimentation.txt",
+ "expected_role_family": "analyst",
+ "expected_must_have_keywords": [
+  "experimentation",
+  "statistics",
+  "dbt"
+ ],
+ "ideal_achievement_ids": [
+  "a30",
+  "a31",
+  "a32",
+  "a33",
+  "a51",
+  "a29",
+  "a08",
+  "a27",
+  "a28"
+ ]
+}

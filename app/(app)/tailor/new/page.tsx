@@ -3,6 +3,9 @@ import { requireUser } from '@/lib/auth';
 import { listJobs } from '@/lib/db/queries/jobs';
 import { NewJobForm } from './new-job-form';
 
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
+
 export default async function NewTailorPage() {
   const user = await requireUser();
   const jobs = await listJobs(user.id, 10);

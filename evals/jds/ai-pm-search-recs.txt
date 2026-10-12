@@ -1,0 +1,4 @@
+Product Manager, Search & Recommendations (AI) — ShopSutra (late-stage e-commerce, Gurugram)
+Own semantic search and personalised recommendations powered by embeddings and ML ranking.
+Responsibilities: define the roadmap for search relevance; partner with data scientists on embedding and ranking models; run A/B experiments on ranking changes; define relevance metrics and guardrails; analyse conversion impact.
+Requirements: 3+ years PM experience; shipped ML or AI features; experience with embeddings or semantic search; strong experimentation and SQL skills; e-commerce experience preferred.

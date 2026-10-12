@@ -1,0 +1,23 @@
+{
+ "name": "ai-pm-edtech",
+ "jd_file": "evals/jds/ai-pm-edtech.txt",
+ "expected_role_family": "ai_pm",
+ "expected_must_have_keywords": [
+  "LLM",
+  "evaluation",
+  "SQL"
+ ],
+ "ideal_achievement_ids": [
+  "a01",
+  "a02",
+  "a03",
+  "a04",
+  "a06",
+  "a05",
+  "a45",
+  "a46",
+  "a08",
+  "a07",
+  "a41"
+ ]
+}

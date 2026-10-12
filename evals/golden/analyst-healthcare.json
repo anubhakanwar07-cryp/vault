@@ -1,0 +1,20 @@
+{
+ "name": "analyst-healthcare",
+ "jd_file": "evals/jds/analyst-healthcare.txt",
+ "expected_role_family": "analyst",
+ "expected_must_have_keywords": [
+  "Power BI",
+  "forecast",
+  "healthcare"
+ ],
+ "ideal_achievement_ids": [
+  "a37",
+  "a38",
+  "a39",
+  "a52",
+  "a26",
+  "a35",
+  "a31",
+  "a29"
+ ]
+}

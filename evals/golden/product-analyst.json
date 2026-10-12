@@ -1,0 +1,22 @@
+{
+ "name": "product-analyst",
+ "jd_file": "evals/jds/product-analyst.txt",
+ "expected_role_family": "analyst",
+ "expected_must_have_keywords": [
+  "SQL",
+  "A/B",
+  "dashboards"
+ ],
+ "ideal_achievement_ids": [
+  "a26",
+  "a27",
+  "a28",
+  "a30",
+  "a31",
+  "a32",
+  "a33",
+  "a34",
+  "a50",
+  "a29"
+ ]
+}

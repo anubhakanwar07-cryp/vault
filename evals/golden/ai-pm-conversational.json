@@ -1,0 +1,22 @@
+{
+ "name": "ai-pm-conversational",
+ "jd_file": "evals/jds/ai-pm-conversational.txt",
+ "expected_role_family": "ai_pm",
+ "expected_must_have_keywords": [
+  "conversational",
+  "prompt",
+  "user research"
+ ],
+ "ideal_achievement_ids": [
+  "a43",
+  "a44",
+  "a01",
+  "a06",
+  "a05",
+  "a40",
+  "a41",
+  "a46",
+  "a12",
+  "a09"
+ ]
+}

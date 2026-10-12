@@ -34,6 +34,7 @@ export async function structureSource(
     promptVersion: importPrompt.version,
     userId,
     maxTokens: 16_000,
+    timeoutMs: 120_000, // long resumes/portfolios produce a lot of JSON
   });
   const checked = checkImport(dedupeWithinProjects(raw), text);
   const { draft, merge } = resolveMerge(checked.draft, vault);

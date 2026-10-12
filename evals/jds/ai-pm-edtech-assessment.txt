@@ -1,0 +1,5 @@
+AI Product Manager, Assessments — Gradewise (growth stage edtech, Pune)
+Build AI-graded assessments and feedback for test-prep students.
+You'll own LLM grading features end to end, design rubrics and evaluation sets to validate grading accuracy, partner with academic teams, and run experiments on learner outcomes.
+Must have: 2+ years product management; LLM product experience; evaluation design for AI outputs; edtech or learning product experience; data fluency (SQL, Amplitude).
+Nice: experience working with teachers or coaching centres.

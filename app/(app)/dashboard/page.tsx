@@ -9,6 +9,9 @@ import { getProfile, getVaultTree } from '@/lib/db/queries/vault';
 import { callbackStats } from '@/lib/tracker/stats';
 import { average, DEEPEN_THRESHOLD } from '@/lib/vault/completeness';
 
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
+
 export default async function DashboardPage() {
   const user = await requireUser();
   const [tree, profile, apps] = await Promise.all([

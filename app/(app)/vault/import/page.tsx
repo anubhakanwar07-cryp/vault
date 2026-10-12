@@ -3,6 +3,9 @@ import { requireUser } from '@/lib/auth';
 import { listVaultSources } from '@/lib/db/queries/vault';
 import { ImportFlow } from './import-flow';
 
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
+
 const ICONS = { resume: FileText, portfolio: Globe, brief: PenLine } as const;
 
 export default async function ImportPage() {

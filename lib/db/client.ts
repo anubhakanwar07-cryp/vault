@@ -18,7 +18,15 @@ const globalForDb = globalThis as unknown as { __pg?: postgres.Sql; __db?: DB };
 export function adminDb(): DB {
   if (!globalForDb.__db) {
     // prepare:false keeps us compatible with Supabase's transaction pooler.
-    globalForDb.__pg = postgres(serverEnv().DATABASE_URL, { prepare: false, max: 5 });
+    globalForDb.__pg = postgres(serverEnv().DATABASE_URL, {
+      prepare: false,
+      max: 5,
+      // Close idle sockets before the pooler silently drops them (seen as "read ETIMEDOUT").
+      idle_timeout: 20,
+      max_lifetime: 60 * 30,
+      connect_timeout: 15,
+      keep_alive: 30,
+    });
     globalForDb.__db = drizzle(globalForDb.__pg, { schema });
   }
   return globalForDb.__db;
@@ -28,11 +36,31 @@ export function adminDb(): DB {
  * Runs `fn` in a transaction as the Supabase `authenticated` role with auth.uid() = userId,
  * so every query is subject to the RLS policies in schema.ts.
  */
+/** Client-side ceiling for one user transaction: a dead pooler socket must fail fast, not hang. */
+export const TX_DEADLINE_MS = 60_000;
+
 export async function withUser<T>(userId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`Database transaction exceeded ${TX_DEADLINE_MS} ms`)),
+      TX_DEADLINE_MS,
+    );
+  });
+  try {
+    return await Promise.race([runAsUser(userId, fn), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function runAsUser<T>(userId: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
   return adminDb().transaction(async (tx) => {
     const claims = JSON.stringify({ sub: userId, role: 'authenticated' });
     await tx.execute(
-      sql`select set_config('request.jwt.claims', ${claims}, true), set_config('role', 'authenticated', true)`,
+      // The idle-in-transaction timeout frees pooler slots if a client dies mid-transaction.
+      sql`select set_config('request.jwt.claims', ${claims}, true), set_config('role', 'authenticated', true),
+                 set_config('idle_in_transaction_session_timeout', '60000', true)`,
     );
     return fn(tx);
   });

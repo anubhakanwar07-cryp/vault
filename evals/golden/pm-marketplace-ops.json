@@ -1,0 +1,22 @@
+{
+ "name": "pm-marketplace-ops",
+ "jd_file": "evals/jds/pm-marketplace-ops.txt",
+ "expected_role_family": "pm",
+ "expected_must_have_keywords": [
+  "returns",
+  "automation",
+  "e-commerce"
+ ],
+ "ideal_achievement_ids": [
+  "a34",
+  "a35",
+  "a36",
+  "a28",
+  "a26",
+  "a23",
+  "a13",
+  "a25",
+  "a27",
+  "a50"
+ ]
+}

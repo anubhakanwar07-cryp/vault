@@ -1,0 +1,22 @@
+{
+ "name": "growth-marketing-analytics",
+ "jd_file": "evals/jds/growth-marketing-analytics.txt",
+ "expected_role_family": "growth",
+ "expected_must_have_keywords": [
+  "conversion",
+  "cohort",
+  "experimentation"
+ ],
+ "ideal_achievement_ids": [
+  "a27",
+  "a50",
+  "a28",
+  "a26",
+  "a30",
+  "a31",
+  "a08",
+  "a34",
+  "a32",
+  "a29"
+ ]
+}

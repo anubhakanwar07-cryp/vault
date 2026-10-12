@@ -3,6 +3,9 @@ import { JdEditor } from '@/components/tailor/jd-editor';
 import { requireUser } from '@/lib/auth';
 import { getJob, roleSpans } from '@/lib/db/queries/jobs';
 
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
+
 export default async function ConfirmPage({ params }: PageProps<'/tailor/[jobId]/confirm'>) {
   const { jobId } = await params;
   const user = await requireUser();

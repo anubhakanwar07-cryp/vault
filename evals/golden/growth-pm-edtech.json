@@ -1,0 +1,22 @@
+{
+ "name": "growth-pm-edtech",
+ "jd_file": "evals/jds/growth-pm-edtech.txt",
+ "expected_role_family": "growth",
+ "expected_must_have_keywords": [
+  "retention",
+  "experiments",
+  "lifecycle"
+ ],
+ "ideal_achievement_ids": [
+  "a07",
+  "a08",
+  "a09",
+  "a10",
+  "a47",
+  "a48",
+  "a06",
+  "a01",
+  "a50",
+  "a22"
+ ]
+}

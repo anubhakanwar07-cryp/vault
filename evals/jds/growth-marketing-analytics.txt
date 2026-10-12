@@ -1,0 +1,4 @@
+Growth Analyst / PM — Bazaarly (e-commerce)
+Drive conversion and retention through data and experiments.
+Responsibilities: own checkout conversion experiments; build cohort retention analyses by acquisition channel; recommend pricing and shipping thresholds; partner with marketing on budget allocation.
+Requirements: 1–4 years growth/analytics; SQL and BigQuery; experimentation and statistics; e-commerce experience.

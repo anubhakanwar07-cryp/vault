@@ -1,0 +1,22 @@
+{
+ "name": "analyst-fintech",
+ "jd_file": "evals/jds/analyst-fintech.txt",
+ "expected_role_family": "analyst",
+ "expected_must_have_keywords": [
+  "SQL",
+  "dashboards",
+  "payments"
+ ],
+ "ideal_achievement_ids": [
+  "a17",
+  "a20",
+  "a24",
+  "a26",
+  "a23",
+  "a31",
+  "a30",
+  "a27",
+  "a50",
+  "a36"
+ ]
+}

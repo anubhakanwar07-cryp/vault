@@ -19,6 +19,8 @@ export type CallLLMOptions<T> = {
   maxTokens?: number;
   /** Default 'none' (see providers/openai.ts). */
   reasoningEffort?: ReasoningEffort;
+  /** Per-request timeout (default 45 s in the providers). */
+  timeoutMs?: number;
 };
 
 export type LLMDeps = {
@@ -69,6 +71,7 @@ export async function callLLMWith<T>(deps: LLMDeps, opts: CallLLMOptions<T>): Pr
         temperature: opts.temperature ?? 0.2,
         maxTokens: opts.maxTokens ?? 4096,
         reasoningEffort: opts.reasoningEffort,
+        timeoutMs: opts.timeoutMs,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

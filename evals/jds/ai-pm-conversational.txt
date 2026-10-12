@@ -1,0 +1,5 @@
+Product Manager, Conversational AI — Chatterbox (early stage, remote)
+We build WhatsApp-first AI assistants for small businesses in India.
+You will: own the assistant roadmap; design conversation flows and prompts; run beta programs and user interviews; measure retention and task success; work with 3 engineers.
+You have: 2+ years in product; shipped a conversational or LLM product; strong user research skills; experience with prompt design; comfort with Twilio or WhatsApp Business API is a plus.
+Nice to have: zero-to-one experience; side projects with LLMs.

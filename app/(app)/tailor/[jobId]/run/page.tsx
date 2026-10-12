@@ -3,6 +3,9 @@ import { requireUser } from '@/lib/auth';
 import { getJob } from '@/lib/db/queries/jobs';
 import { RunProgress } from './run-progress';
 
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
+
 export default async function RunPage({ params }: PageProps<'/tailor/[jobId]/run'>) {
   const { jobId } = await params;
   const user = await requireUser();

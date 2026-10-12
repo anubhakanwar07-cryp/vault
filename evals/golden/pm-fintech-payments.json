@@ -1,0 +1,22 @@
+{
+ "name": "pm-fintech-payments",
+ "jd_file": "evals/jds/pm-fintech-payments.txt",
+ "expected_role_family": "pm",
+ "expected_must_have_keywords": [
+  "UPI",
+  "payments",
+  "SQL"
+ ],
+ "ideal_achievement_ids": [
+  "a15",
+  "a16",
+  "a17",
+  "a18",
+  "a49",
+  "a23",
+  "a24",
+  "a25",
+  "a19",
+  "a21"
+ ]
+}

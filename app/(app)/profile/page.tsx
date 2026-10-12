@@ -2,7 +2,11 @@ import { requireUser } from '@/lib/auth';
 import { getProfile } from '@/lib/db/queries/vault';
 import { listStyleRules } from '@/lib/learning/style-rules';
 import { ProfileForm } from './profile-form';
+import { DangerZone } from './danger-zone';
 import { StyleRules } from './style-rules';
+
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
 
 export default async function ProfilePage() {
   const user = await requireUser();
@@ -34,6 +38,7 @@ export default async function ProfilePage() {
           active: r.active,
         }))}
       />
+      <DangerZone />
     </div>
   );
 }

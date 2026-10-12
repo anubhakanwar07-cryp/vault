@@ -1,0 +1,5 @@
+Senior Product Manager, LLM Platform — Nexa AI (Series C, Bengaluru)
+Nexa builds an enterprise copilot platform. You will own the evaluation and quality layer for our LLM features.
+Responsibilities: define quality metrics for LLM outputs; build offline and online evaluation pipelines with ML engineers; run red-teaming and safety reviews before launches; manage model selection and inference cost trade-offs; work with design on AI UX patterns.
+Requirements: 3+ years of product management; shipped LLM-powered features to production; hands-on experience designing LLM evaluations; strong understanding of RAG and retrieval; comfortable with Python and SQL.
+Nice to have: experience with AI safety or red teaming; experience reducing model inference cost.

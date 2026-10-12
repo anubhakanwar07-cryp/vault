@@ -1,0 +1,22 @@
+{
+ "name": "ai-pm-edtech-assessment",
+ "jd_file": "evals/jds/ai-pm-edtech-assessment.txt",
+ "expected_role_family": "ai_pm",
+ "expected_must_have_keywords": [
+  "LLM",
+  "evaluation",
+  "edtech"
+ ],
+ "ideal_achievement_ids": [
+  "a02",
+  "a01",
+  "a41",
+  "a06",
+  "a45",
+  "a11",
+  "a12",
+  "a05",
+  "a03",
+  "a07"
+ ]
+}

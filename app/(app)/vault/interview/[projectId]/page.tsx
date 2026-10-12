@@ -3,6 +3,9 @@ import { requireUser } from '@/lib/auth';
 import { getProjectWithAchievements } from '@/lib/db/queries/vault';
 import { InterviewChat } from './interview-chat';
 
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
+
 export default async function InterviewPage({ params }: PageProps<'/vault/interview/[projectId]'>) {
   const { projectId } = await params;
   const user = await requireUser();

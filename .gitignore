@@ -46,3 +46,8 @@ next-env.d.ts
 
 # private test fixtures (your real resume)
 /tests/fixtures/private/
+
+# playwright
+/test-results/
+/playwright-report/
+/tests/e2e/.auth/

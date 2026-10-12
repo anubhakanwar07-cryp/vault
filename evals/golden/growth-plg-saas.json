@@ -1,0 +1,22 @@
+{
+ "name": "growth-plg-saas",
+ "jd_file": "evals/jds/growth-plg-saas.txt",
+ "expected_role_family": "growth",
+ "expected_must_have_keywords": [
+  "activation",
+  "pricing",
+  "experiments"
+ ],
+ "ideal_achievement_ids": [
+  "a07",
+  "a08",
+  "a10",
+  "a14",
+  "a19",
+  "a22",
+  "a11",
+  "a48",
+  "a47",
+  "a21"
+ ]
+}

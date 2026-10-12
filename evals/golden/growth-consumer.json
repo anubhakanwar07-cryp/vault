@@ -1,0 +1,22 @@
+{
+ "name": "growth-consumer",
+ "jd_file": "evals/jds/growth-consumer.txt",
+ "expected_role_family": "growth",
+ "expected_must_have_keywords": [
+  "A/B",
+  "activation",
+  "retention"
+ ],
+ "ideal_achievement_ids": [
+  "a07",
+  "a08",
+  "a09",
+  "a10",
+  "a47",
+  "a48",
+  "a50",
+  "a22",
+  "a06",
+  "a43"
+ ]
+}

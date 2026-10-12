@@ -1,0 +1,22 @@
+{
+ "name": "growth-pm-fintech",
+ "jd_file": "evals/jds/growth-pm-fintech.txt",
+ "expected_role_family": "growth",
+ "expected_must_have_keywords": [
+  "A/B",
+  "referral",
+  "retention"
+ ],
+ "ideal_achievement_ids": [
+  "a19",
+  "a22",
+  "a08",
+  "a47",
+  "a09",
+  "a07",
+  "a20",
+  "a50",
+  "a10",
+  "a48"
+ ]
+}

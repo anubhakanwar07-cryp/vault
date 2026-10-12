@@ -44,3 +44,14 @@ export async function deleteStyleRuleAction(id: string): Promise<ActionResult> {
   revalidatePath('/profile');
   return { ok: true, data: undefined };
 }
+
+export async function deleteAccountAction(confirmation: string): Promise<ActionResult> {
+  const user = await requireUser();
+  if (confirmation.trim().toUpperCase() !== 'DELETE')
+    return { ok: false, error: 'Type DELETE to confirm.' };
+  const { deleteAccount } = await import('@/lib/account');
+  await deleteAccount(user.id);
+  const { createSupabaseServerClient } = await import('@/lib/supabase/server');
+  await (await createSupabaseServerClient()).auth.signOut();
+  return { ok: true, data: undefined };
+}

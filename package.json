@@ -15,7 +15,10 @@
     "db:migrate": "drizzle-kit migrate",
     "smoke:llm": "tsx --conditions=react-server --tsconfig tsconfig.json scripts/llm-smoke.ts",
     "prepare": "git config core.hooksPath .githooks || true",
-    "cost:last": "tsx --tsconfig tsconfig.json scripts/run-cost.ts"
+    "cost:last": "tsx --tsconfig tsconfig.json scripts/run-cost.ts",
+    "eval": "tsx --conditions=react-server --tsconfig tsconfig.json evals/run.ts",
+    "test:e2e": "playwright test",
+    "tune:select": "tsx --conditions=react-server --tsconfig tsconfig.json scripts/tune-select.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
@@ -50,6 +53,7 @@
     "zod": "^4.6.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/turbopack": "^4",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^20",

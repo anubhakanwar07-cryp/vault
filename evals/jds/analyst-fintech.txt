@@ -1,0 +1,4 @@
+Product Analyst — Paymint (fintech)
+Analyse payment funnels, success rates and merchant behaviour.
+Responsibilities: build dashboards on payment success and failures; root-cause drop-offs; support experiments; present insights to product leadership.
+Requirements: 1–3 years analytics; advanced SQL; Metabase/Tableau; fintech or payments domain a plus; experimentation basics.

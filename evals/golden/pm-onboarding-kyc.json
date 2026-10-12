@@ -1,0 +1,22 @@
+{
+ "name": "pm-onboarding-kyc",
+ "jd_file": "evals/jds/pm-onboarding-kyc.txt",
+ "expected_role_family": "pm",
+ "expected_must_have_keywords": [
+  "KYC",
+  "funnel",
+  "A/B"
+ ],
+ "ideal_achievement_ids": [
+  "a19",
+  "a20",
+  "a21",
+  "a22",
+  "a07",
+  "a08",
+  "a10",
+  "a18",
+  "a17",
+  "a27"
+ ]
+}

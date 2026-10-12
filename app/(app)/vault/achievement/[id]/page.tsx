@@ -5,6 +5,9 @@ import { ScoreBar } from '@/components/vault/score-bar';
 import { requireUser } from '@/lib/auth';
 import { getAchievement, getVaultTree } from '@/lib/db/queries/vault';
 
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
+
 export default async function AchievementPage({
   params,
   searchParams,

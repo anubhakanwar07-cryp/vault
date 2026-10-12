@@ -3,6 +3,9 @@ import { requireUser } from '@/lib/auth';
 import { listApplications, prefillFromResume } from '@/lib/db/queries/applications';
 import { listResumesForLinking } from '@/lib/db/queries/resumes';
 
+// Depends on the signed-in user; navigation blocks on the server (see app/(app)/layout.tsx).
+export const instant = false;
+
 export default async function ApplicationsPage({ searchParams }: PageProps<'/applications'>) {
   const sp = await searchParams;
   const user = await requireUser();

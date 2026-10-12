@@ -12,6 +12,8 @@ export type CompletionRequest = {
   maxTokens: number;
   /** Reasoning models only. 'none' keeps latency/cost low and lets temperature apply. */
   reasoningEffort?: ReasoningEffort;
+  /** Per-request timeout; the SDK retries timed-out requests with backoff. */
+  timeoutMs?: number;
 };
 
 export type CompletionResponse = {

@@ -1,0 +1,22 @@
+{
+ "name": "pm-payments-risk",
+ "jd_file": "evals/jds/pm-payments-risk.txt",
+ "expected_role_family": "pm",
+ "expected_must_have_keywords": [
+  "UPI",
+  "success rate",
+  "compliance"
+ ],
+ "ideal_achievement_ids": [
+  "a17",
+  "a15",
+  "a49",
+  "a18",
+  "a16",
+  "a25",
+  "a24",
+  "a23",
+  "a20",
+  "a19"
+ ]
+}
