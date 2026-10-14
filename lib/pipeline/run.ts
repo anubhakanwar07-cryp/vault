@@ -20,14 +20,14 @@ import { recruiterSimOutput, type RecruiterSim } from '@/lib/llm/schemas/pipelin
 import { resumeToText } from '@/lib/resume/plain-text';
 import type { MatchReport, ResumeDoc } from '@/lib/resume/types';
 import { knockoutWarnings } from '@/lib/vault/experience';
-import { buildMatchReport, orderSkills, pickExtras } from './assemble-utils';
+import { buildMatchReport, groupSkills, pickExtras } from './assemble-utils';
 import { retrieve } from './retrieve';
-import { writeHeadlineSummary, type RewriteContext } from './rewrite';
+import type { RewriteContext } from './rewrite';
 import { scoreEvidence } from './score';
 import { baseValue, select, selectedIds } from './select';
 import { requirementsOf, type ProgressEvent } from './types';
-import { rewriteAndVerifyBullets, verifyClaimsLLM, type RewriteHooks } from './verify';
-import { leadVerb, verifySummaryLine, type VerifyContext } from './verify-code';
+import { rewriteAndVerifyBullets, type RewriteHooks } from './verify';
+import { leadVerb, type VerifyContext } from './verify-code';
 
 export class PipelineError extends Error {
   constructor(
@@ -120,7 +120,7 @@ export async function runTailorPipeline(opts: {
     emit({ stage: 'select', status: 'done', message: `Picked ${chosen.length} achievements` });
 
     // Shared context for writing + verification.
-    const [rules, vaultToolRows, eduRows, extraRows, spans] = await Promise.all([
+    const [rules, vaultToolRows, vaultSkillRows, eduRows, extraRows, spans] = await Promise.all([
       withUser(userId, (tx) =>
         tx
           .select({ rule: styleRules.rule })
@@ -131,6 +131,12 @@ export async function runTailorPipeline(opts: {
       withUser(userId, (tx) =>
         tx
           .select({ t: sql<string>`distinct unnest(${achievements.tools})` })
+          .from(achievements)
+          .where(eq(achievements.isArchived, false)),
+      ),
+      withUser(userId, (tx) =>
+        tx
+          .select({ s: sql<string>`distinct unnest(${achievements.skills})` })
           .from(achievements)
           .where(eq(achievements.isArchived, false)),
       ),
@@ -155,23 +161,6 @@ export async function runTailorPipeline(opts: {
     // ---- Stages 6–7: rewrite + verify (bullets)
     await setStage('rewrite');
     emit({ stage: 'rewrite', status: 'start', message: 'Writing bullets…' });
-    const profileForPrompt = {
-      name: profile?.fullName ?? null,
-      location: profile?.location ?? null,
-      target_role_families: profile?.targetRoleFamilies ?? [],
-      base_summary: profile?.baseSummary ?? null,
-    };
-    const profileText = [profile?.fullName, profile?.location, profile?.baseSummary]
-      .filter(Boolean)
-      .join('\n');
-    // Headline/summary only need the selection, so they're written alongside the bullets.
-    const headlinePromise = writeVerifiedHeadline(
-      ctx,
-      chosen,
-      profileForPrompt,
-      profileText,
-      verifyCtx,
-    );
     const outcomes = await rewriteAndVerifyBullets({
       ctx,
       records: chosen,
@@ -207,13 +196,6 @@ export async function runTailorPipeline(opts: {
       for (const [id, o] of Object.entries(redo)) if (o.verified) outcomes[id] = o;
     }
 
-    // ---- Headline + summary (verified the same way)
-    let { headline, summary } = await headlinePromise;
-    if (!headline) {
-      // Safe fallback: the most recent title verbatim; the user's own base summary (or none).
-      headline = chosen.find((c) => c.role)?.role?.title ?? jd.role_title;
-      summary = profile?.baseSummary ?? '';
-    }
     emit({ stage: 'verify', status: 'done', message: 'Every line checked against your vault' });
 
     // ---- Stage 8: assemble
@@ -227,6 +209,13 @@ export async function runTailorPipeline(opts: {
     });
     const anyRecord = (projectId: string) => chosen.find((c) => c.project?.id === projectId)!;
 
+    const skillGroups = groupSkills(
+      verifyCtx.vaultTools,
+      vaultSkillRows.map((r) => r.s),
+      chosen,
+      jd.keywords,
+      jd.role_family,
+    );
     const doc: ResumeDoc = {
       header: {
         name: profile?.fullName ?? '',
@@ -235,12 +224,14 @@ export async function runTailorPipeline(opts: {
         location: profile?.location ?? null,
         links: profile?.links ?? [],
       },
-      headline,
-      summary,
+      headline: '',
+      summary: '',
       experience: selection.roles.map((r) => {
         const role = chosen.find((c) => c.role?.id === r.roleId)!.role!;
-        // One project → bullets sit directly under the role; several → grouped by project name.
-        const grouped = r.projects.length > 1;
+        // Projects render as "Name — one-liner" sub-heads (SPEC §11). Only a lone project with no
+        // one-liner puts its bullets directly under the role.
+        const grouped =
+          r.projects.length > 1 || r.projects.some((p) => anyRecord(p.projectId).project!.oneLiner);
         return {
           roleId: role.id,
           company: role.company,
@@ -253,6 +244,7 @@ export async function runTailorPipeline(opts: {
             ? {
                 projects: r.projects.map((p) => ({
                   name: anyRecord(p.projectId).project!.name,
+                  oneLiner: anyRecord(p.projectId).project!.oneLiner,
                   bullets: p.achievementIds.map(bulletFor),
                 })),
               }
@@ -265,10 +257,16 @@ export async function runTailorPipeline(opts: {
           projectId: proj.id,
           name: proj.name,
           url: proj.proofUrl,
+          start: proj.startDate,
+          end: proj.endDate,
           bullets: p.achievementIds.map(bulletFor),
         };
       }),
-      skills: orderSkills(verifyCtx.vaultTools, chosen, jd.keywords),
+      skills: skillGroups.flatMap((g) => g.items),
+      skillGroups,
+      emphasis: [...jd.keywords]
+        .sort((a, b) => b.weight - a.weight)
+        .flatMap((k) => [k.term, ...k.synonyms]),
       education: eduRows.map((e) => ({
         institution: e.institution,
         degree: e.degree,
@@ -282,6 +280,7 @@ export async function runTailorPipeline(opts: {
         title: x.title,
         issuer: x.issuer,
         date: x.date,
+        description: x.description,
       })),
     };
 
@@ -294,7 +293,7 @@ export async function runTailorPipeline(opts: {
       requirements,
       selection,
       bulletIdByAchievement,
-      lines: [...lines, { id: 'headline', text: headline }, { id: 'summary', text: summary }],
+      lines,
       knockoutWarnings: knockoutWarnings(jd.knockouts, spans),
       fallbackBullets,
       candidates: candidates.map((c) => ({
@@ -385,34 +384,6 @@ export async function runTailorPipeline(opts: {
     ).catch(() => {});
     throw err;
   }
-}
-
-/** Headline + summary with the same code + LLM verification loop as bullets; '' if it never passes. */
-async function writeVerifiedHeadline(
-  ctx: RewriteContext,
-  chosen: Parameters<typeof writeHeadlineSummary>[1],
-  profileForPrompt: Record<string, unknown>,
-  profileText: string,
-  verifyCtx: VerifyContext,
-): Promise<{ headline: string; summary: string }> {
-  let retry: string[] | undefined;
-  for (let attempt = 0; attempt <= 2; attempt++) {
-    const hs = await writeHeadlineSummary(ctx, chosen, profileForPrompt, retry);
-    const reasons = [
-      ...verifySummaryLine(hs.headline, chosen, profileText, verifyCtx),
-      ...verifySummaryLine(hs.summary, chosen, profileText, verifyCtx),
-    ];
-    if (reasons.length === 0) {
-      const llm = await verifyClaimsLLM(ctx, [
-        { lineId: 'headline', text: hs.headline, sources: chosen },
-        { lineId: 'summary', text: hs.summary, sources: chosen },
-      ]);
-      reasons.push(...(llm.headline ?? []), ...(llm.summary ?? []));
-    }
-    if (reasons.length === 0) return { headline: hs.headline, summary: hs.summary };
-    retry = reasons;
-  }
-  return { headline: '', summary: '' };
 }
 
 export async function runRecruiterSim(

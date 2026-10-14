@@ -113,7 +113,7 @@ describe('tailoring pipeline (Phase 4 acceptance)', () => {
     // No number anywhere on the page that isn't in the vault fixture.
     const fixtureText = await readFile('evals/fixtures/vault.json', 'utf8');
     const fixtureNums = new Set(numbersIn(fixtureText));
-    for (const line of [doc.headline, doc.summary, ...allBullets(doc).map((b) => b.text)]) {
+    for (const line of allBullets(doc).map((b) => b.text)) {
       for (const n of numbersIn(line)) expect(fixtureNums.has(n), `${n} in "${line}"`).toBe(true);
     }
 

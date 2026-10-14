@@ -480,8 +480,8 @@ Unit tests: deterministic output for fixture; caps respected; must-have coverage
 
 - One call per selected achievement, strong tier, temperature 0.5, run in parallel (concurrency 5). Prompt §9.3.
 - Context passed: full achievement record, its project + role, the requirements it covers (from the matrix), the JD's core problem it maps to best, top keywords with synonyms, role family, seniority, tone, the user's active style rules, banned phrases.
-- Then one call for headline + summary (prompt §9.4) using only selected achievements.
-- Skills section: order the user's skills by (appears in JD keywords) then (frequency in selected bullets). No new skills. Max 12.
+- ~~Then one call for headline + summary (prompt §9.4)~~ — removed in Phase 8: the template has no summary.
+- Skills section: order the user's skills by (appears in JD keywords) then (frequency in selected bullets). No new skills. Split into two labelled lines (Phase 8): **Technical** (tools + known technologies) and **Product** (everything else; label is `Core` for non-product role families). Max 12 per line.
 - Education and extras: include all education; include extras whose tags overlap JD keywords, max 3.
 
 ### 7.8 Stage 7 — Verify + recruiter sim
@@ -507,9 +507,11 @@ type ResumeDoc = {
   headline: string;
   summary: string;
   experience: { roleId; company; title; location; start; end; bullets: { bulletId; text }[];
-                projects?: { name; bullets: {bulletId; text}[] }[] }[];
-  projects: { projectId; name; url?; bullets: {bulletId; text}[] }[];   // side projects
+                projects?: { name; oneLiner?; bullets: {bulletId; text}[] }[] }[];
+  projects: { projectId; name; url?; start?; end?; bullets: {bulletId; text}[] }[];   // side projects
   skills: string[];
+  skillGroups?: { label; items: string[] }[];   // Phase 8
+  emphasis?: string[];                          // Phase 8: JD terms to bold at render time
   education: {...}[];
   extras: {...}[];
 };
@@ -756,13 +758,21 @@ Editing creates a new resume version only on "Mark as final" or export (not on e
 
 ## 11. Export template (ATS-safe)
 
-One template, `lib/export/template.tsx`, used for preview, PDF, and DOCX.
+One template, `lib/export/template.tsx`, used for preview, PDF, and DOCX. Since Phase 8 it reproduces the
+layout of the owner's own resume (`Anubha_Kanwar_Resume.pdf`) — every tailored resume comes out in this format.
 
 - Single column. No tables, text boxes, columns, icons, images, or headers/footers containing key info.
-- Section headings exactly: `Summary`, `Experience`, `Projects`, `Skills`, `Education`, `Awards & Leadership`.
-- Font: a standard sans (Inter / Arial fallback), 10–11 pt body, 0.5–0.7 in margins.
-- Dates right-aligned as plain text: `Mon YYYY – Mon YYYY` or `– Present`.
-- Links as visible text (e.g. `portfolio-name.vercel.app`), not hidden hyperlinks only.
+- US Letter, 0.6 in margins, sans font (Lato → Carlito/Calibri → Arial fallback), 10.5 pt body.
+- Header: name centred in capitals; one centred contact line `phone | email | LinkedIn | Portfolio`, where links are labelled hyperlinks (the profile link label is the visible text).
+- No headline or summary.
+- Section order and headings exactly: `Education`, `Experience`, `Projects`, `Skills`, `Awards / Position of Responsibility`. Title case, bold, ruled underneath.
+- Education: **institution** with italic dates right; italic `Degree in Field` (and grade) beneath.
+- Experience: **Title – Company** with italic dates right. Each project under a role renders as `**Project name** — one-liner` followed by its bullets (bullets sit directly under the role only when a single project has no one-liner).
+- Projects (side projects): **name** with italic dates right, then bullets.
+- Skills: one line per group, `**Technical:** a, b, c` / `**Product:** …`.
+- Awards: bullets `**Title, Issuer** — description`.
+- Dates as plain text, full month names: `July 2025 – Present`.
+- Bold emphasis inside bullets is applied at render time, in code: metrics (numbers with %, x, +, K/M) and JD keywords that the line already contains, max 3 spans per bullet. The stored text never contains markup, so verification is unaffected.
 - PDF must contain real selectable text. Acceptance test: extract text from the exported PDF with `pdf-parse` and confirm every bullet string is present in order.
 - File name: `{FullName}_{Company}_{RoleTitle}.pdf`.
 
@@ -830,6 +840,10 @@ Applications tracker, log-from-editor, baseline logging, dashboard callback stat
 ### Phase 7 — Evals + admin + polish
 Eval harness and reports, `/admin/runs` with per-run stage timeline and every LLM input/output, empty states, loading states, error states, rate limiting (max 30 tailor runs/user/day), README with setup steps.
 **Accept:** `pnpm eval` runs end-to-end on all 20 golden JDs and writes a report; fabrication = 0; admin page restricted to `ADMIN_EMAILS`; Playwright e2e covers: sign in → import resume → paste JD → confirm → tailor → edit a bullet → export PDF → log application.
+
+### Phase 8 — Your-format template
+Rebuild the single template (§11) to match the owner's uploaded resume: centred header with labelled links, Education first, no summary, `Project — one-liner` sub-heads under roles, dated side projects, Technical/Product skill lines, awards with descriptions, render-time bold for metrics + JD keywords, US Letter. Same layout in preview, PDF and DOCX. Drop headline/summary generation from the pipeline. Older stored resumes still render.
+**Accept:** template unit tests cover section order, header, project sub-heads, skill groups and bolding (max 3 spans, only existing text); PDF text-extraction test still passes with bold spans; DOCX has the same headings in the same order; typecheck, lint and unit tests pass.
 
 ---
 

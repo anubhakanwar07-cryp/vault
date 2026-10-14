@@ -160,11 +160,7 @@ function refreshReport(
   const bulletIdByAchievement = Object.fromEntries(
     [...achievementByBullet.entries()].map(([b, a]) => [a, b]),
   );
-  const lines = [
-    ...bulletIds(doc).map((id) => ({ id, text: findBullet(doc, id)!.text })),
-    { id: 'headline', text: doc.headline },
-    { id: 'summary', text: doc.summary },
-  ];
+  const lines = bulletIds(doc).map((id) => ({ id, text: findBullet(doc, id)!.text }));
   const next = buildMatchReport({
     jd: l.jd,
     requirements,
@@ -542,7 +538,7 @@ export async function improveWeakestLine(userId: string, resumeId: string): Prom
     }
   }
   if (!best || bestSim < 0.3)
-    throw new EditorError('The weakest line isn’t a bullet (it may be the headline or summary).');
+    throw new EditorError('The weakest line isn’t a bullet on this page.');
   return regenerateBullet(userId, resumeId, best, l.sim.weakest_line_critique);
 }
 

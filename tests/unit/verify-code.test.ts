@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { keywordCoverage, mentions } from '@/lib/keywords/coverage';
-import {
-  leadVerb,
-  verifyBullet,
-  verifySummaryLine,
-  type VerifyContext,
-} from '@/lib/pipeline/verify-code';
+import { leadVerb, verifyBullet, type VerifyContext } from '@/lib/pipeline/verify-code';
 import type { AchievementRecord } from '@/lib/pipeline/types';
 
 const record: AchievementRecord = {
@@ -114,22 +109,6 @@ describe('verifyBullet', () => {
 
   it('never names the target company', () =>
     expect(verifyBullet(`${ok} for Brightpath`, record, ctx).join()).toContain('Brightpath'));
-});
-
-describe('verifySummaryLine', () => {
-  it('checks numbers and tools against all selected records', () => {
-    expect(
-      verifySummaryLine(
-        'AI PM who shipped a GPT-4 coach and cut errors ~45%',
-        [record],
-        'Aarav',
-        ctx,
-      ),
-    ).toEqual([]);
-    expect(
-      verifySummaryLine('AI PM with 8 years of experience', [record], 'Aarav', ctx).join(),
-    ).toContain('8');
-  });
 });
 
 it('leadVerb', () => expect(leadVerb('  Launched a coach')).toBe('launched'));

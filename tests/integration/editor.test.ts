@@ -137,10 +137,10 @@ describe('export (Phase 5 acceptance)', () => {
       cursor = at + needle.length;
     }
     for (const h of Object.values(SECTION_HEADINGS).filter(
-      (h) => h !== 'Awards & Leadership' || doc.extras.length,
+      (h) => h !== SECTION_HEADINGS.extras || doc.extras.length,
     )) {
-      if (h === 'Summary' && !doc.summary) continue;
       if (h === 'Projects' && !doc.projects.length) continue;
+      if (h === 'Education' && !doc.education.length) continue;
       expect(text.toUpperCase()).toContain(h.toUpperCase());
     }
   }, 120_000);
@@ -154,12 +154,11 @@ describe('export (Phase 5 acceptance)', () => {
       m[1]!.replace(/<[^>]+>/g, '').replace('&amp;', '&'),
     );
     const expected = [
-      doc.summary ? 'Summary' : null,
+      doc.education.length ? 'Education' : null,
       'Experience',
       doc.projects.length ? 'Projects' : null,
       doc.skills.length ? 'Skills' : null,
-      doc.education.length ? 'Education' : null,
-      doc.extras.length ? 'Awards & Leadership' : null,
+      doc.extras.length ? SECTION_HEADINGS.extras : null,
     ].filter(Boolean);
     expect(headings).toEqual(expected);
     const raw = norm((await mammoth.extractRawText({ buffer: buf })).value);

@@ -11,8 +11,9 @@ export const resumeDoc = z.object({
     location: z.string().nullable(),
     links: z.array(z.object({ label: z.string(), url: z.string() })),
   }),
-  headline: z.string(),
-  summary: z.string(),
+  /** Unused since Phase 8 (the template has no summary); kept so older stored resumes still parse. */
+  headline: z.string().default(''),
+  summary: z.string().default(''),
   experience: z.array(
     z.object({
       roleId: z.string(),
@@ -22,7 +23,15 @@ export const resumeDoc = z.object({
       start: z.string(),
       end: z.string().nullable(),
       bullets: z.array(bullet),
-      projects: z.array(z.object({ name: z.string(), bullets: z.array(bullet) })).optional(),
+      projects: z
+        .array(
+          z.object({
+            name: z.string(),
+            oneLiner: z.string().nullable().optional(),
+            bullets: z.array(bullet),
+          }),
+        )
+        .optional(),
     }),
   ),
   projects: z.array(
@@ -30,10 +39,16 @@ export const resumeDoc = z.object({
       projectId: z.string(),
       name: z.string(),
       url: z.string().nullable().optional(),
+      start: z.string().nullable().optional(),
+      end: z.string().nullable().optional(),
       bullets: z.array(bullet),
     }),
   ),
   skills: z.array(z.string()),
+  /** Labelled skill lines (Phase 8). Older resumes have only the flat `skills` list. */
+  skillGroups: z.array(z.object({ label: z.string(), items: z.array(z.string()) })).optional(),
+  /** JD terms the template bolds where a line already contains them (SPEC §11). */
+  emphasis: z.array(z.string()).optional(),
   education: z.array(
     z.object({
       institution: z.string().nullable(),
@@ -50,6 +65,7 @@ export const resumeDoc = z.object({
       title: z.string().nullable(),
       issuer: z.string().nullable(),
       date: z.string().nullable(),
+      description: z.string().nullable().optional(),
     }),
   ),
 });

@@ -9,9 +9,8 @@ const esc = (s: string) =>
 /** Full standalone HTML for the resume — the same template as the preview (SPEC §11). */
 export function resumeHtml(doc: ResumeDoc): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(doc.header.name)}</title>
-<style>@page { size: A4; margin: 0 } html, body { margin: 0; background: #fff }
-${RESUME_CSS}
-.rt-page { width: 210mm; min-height: 297mm; }</style></head><body>${resumeBodyHtml(doc)}</body></html>`;
+<style>@page { size: Letter; margin: 0 } html, body { margin: 0; background: #fff }
+${RESUME_CSS}</style></head><body>${resumeBodyHtml(doc)}</body></html>`;
 }
 
 /** Real, selectable-text PDF via headless Chrome. */
@@ -26,7 +25,7 @@ export async function renderPdf(doc: ResumeDoc): Promise<Uint8Array> {
       (req) => void (req.url().startsWith('data:') ? req.continue() : req.abort()),
     );
     await page.setContent(resumeHtml(doc), { waitUntil: 'load' });
-    return await page.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true });
+    return await page.pdf({ format: 'Letter', printBackground: true, preferCSSPageSize: true });
   } finally {
     await browser.close();
   }

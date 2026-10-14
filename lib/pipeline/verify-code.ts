@@ -100,34 +100,6 @@ export function verifyBullet(text: string, r: AchievementRecord, ctx: VerifyCont
   return reasons;
 }
 
-/** Code-level checks for headline/summary against all selected records + profile text. */
-export function verifySummaryLine(
-  text: string,
-  records: AchievementRecord[],
-  profileText: string,
-  ctx: VerifyContext,
-): string[] {
-  const src = [
-    profileText,
-    ...records.map(sourceText),
-    ...records.map((r) => r.role?.title ?? ''),
-  ].join('\n');
-  const reasons = [...numberCheck(text, src)];
-  const allTerms = new Set(
-    records.flatMap((r) => [...r.tools, ...r.skills]).map((t) => t.toLowerCase()),
-  );
-  const named = [...new Set([...TECH_TERMS, ...ctx.vaultTools])].filter((t) => mentions(text, t));
-  const unsupported = named.filter((t) => !allTerms.has(t.toLowerCase()) && !mentions(src, t));
-  if (unsupported.length)
-    reasons.push(`Names ${unsupported.join(', ')}, which none of the selected work uses.`);
-  const banned = bannedPhrasesIn(text);
-  if (banned.length) reasons.push(`Uses banned phrase(s): ${banned.join(', ')}.`);
-  reasons.push(
-    ...companyCheck(text, ctx, records.map((r) => r.role?.company ?? '').filter(Boolean)),
-  );
-  return reasons;
-}
-
 /** First word of a bullet, lowercased — for the "each verb at most twice" rule (SPEC §8.10). */
 export function leadVerb(text: string): string {
   return (text.trim().match(/^[A-Za-z-]+/)?.[0] ?? '').toLowerCase();

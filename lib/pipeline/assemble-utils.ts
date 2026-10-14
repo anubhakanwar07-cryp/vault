@@ -1,5 +1,6 @@
 // Pure helpers for Stage 8 (SPEC §7.7–7.8).
 import { keywordCoverage, mentionsKeyword, type KeywordLike } from '@/lib/keywords/coverage';
+import { TECH_TERMS } from '@/lib/keywords/tech-terms';
 import type { ParsedJD } from '@/lib/llm/schemas/jd';
 import type { MatchReport } from '@/lib/resume/types';
 import type { AchievementRecord, Requirement, Selection } from './types';
@@ -39,6 +40,41 @@ export function orderSkills(
     .sort((a, b) => b.jd - a.jd || b.f - a.f || a.name.localeCompare(b.name))
     .slice(0, MAX_SKILLS)
     .map((x) => x.name);
+}
+
+const PRODUCT_FAMILIES = new Set(['ai_pm', 'pm', 'growth']);
+
+/**
+ * Skills as labelled lines (SPEC §11): "Technical" = vault tools and known technologies; the rest is
+ * "Product" (or "Core" outside product roles). Each line is ordered and capped by `orderSkills`.
+ */
+export function groupSkills(
+  vaultTools: string[],
+  vaultSkills: string[],
+  selected: AchievementRecord[],
+  keywords: (KeywordLike & { weight: number })[],
+  roleFamily: string,
+): { label: string; items: string[] }[] {
+  const technical = new Set([...vaultTools, ...TECH_TERMS].map((t) => t.toLowerCase()));
+  const all = [...vaultTools, ...vaultSkills];
+  return [
+    {
+      label: 'Technical',
+      items: orderSkills(
+        all.filter((s) => technical.has(s.toLowerCase())),
+        selected,
+        keywords,
+      ),
+    },
+    {
+      label: PRODUCT_FAMILIES.has(roleFamily) ? 'Product' : 'Core',
+      items: orderSkills(
+        all.filter((s) => !technical.has(s.toLowerCase())),
+        selected,
+        keywords,
+      ),
+    },
+  ].filter((g) => g.items.length > 0);
 }
 
 export type ExtraLike = {
@@ -128,11 +164,32 @@ export function buildMatchReport(opts: {
   };
 }
 
-/** "Mon YYYY" for the template and plain-text rendering. */
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+/** "Month YYYY" (full month name, SPEC §11) for the template and plain-text rendering. */
 export function monthYear(d: string | null): string {
   if (!d) return 'Present';
-  const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][
-    Number(d.slice(5, 7)) - 1
-  ];
-  return `${m} ${d.slice(0, 4)}`;
+  return `${MONTHS[Number(d.slice(5, 7)) - 1]} ${d.slice(0, 4)}`;
+}
+
+/** "July 2025 – Present"; "May 2025" when there's no start; '' when there are no dates at all. */
+export function dateRange(
+  start: string | null | undefined,
+  end: string | null | undefined,
+): string {
+  if (!start) return end ? monthYear(end) : '';
+  return `${monthYear(start)} – ${monthYear(end ?? null)}`;
 }

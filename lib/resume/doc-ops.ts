@@ -65,24 +65,34 @@ export function bulletIds(doc: ResumeDoc): string[] {
 
 /**
  * Rough page-fit estimate in rendered lines for one page (SPEC §10 page-fit indicator).
- * ~95 characters per line at 10.5pt across a 7in text column; ~56 lines per page.
+ * ~100 characters per line at 10.5pt across a 7.3in text column (US Letter); ~58 lines per page.
  */
-export const LINES_PER_PAGE = 56;
+export const LINES_PER_PAGE = 58;
 export function estimateLines(doc: ResumeDoc): number {
-  const wrap = (s: string, width = 95) => Math.max(1, Math.ceil(s.length / width));
-  let n = 3; // name, contact, spacing
-  if (doc.headline) n += 1;
-  if (doc.summary) n += 1.6 + wrap(doc.summary);
-  if (doc.experience.length) n += 1.6;
+  const wrap = (s: string, width = 100) => Math.max(1, Math.ceil(s.length / width));
+  const SECTION = 1.6;
+  let n = 2.5; // name, contact
+  if (doc.education.length) n += SECTION + doc.education.length * 2;
+  if (doc.experience.length) n += SECTION;
   for (const e of doc.experience) {
     n += 1.2;
-    for (const b of e.bullets) n += wrap(b.text, 90);
-    for (const p of e.projects ?? []) n += 1 + p.bullets.reduce((s, b) => s + wrap(b.text, 90), 0);
+    for (const b of e.bullets) n += wrap(b.text, 95);
+    for (const p of e.projects ?? [])
+      n +=
+        wrap(`${p.name} — ${p.oneLiner ?? ''}`) +
+        p.bullets.reduce((s, b) => s + wrap(b.text, 92), 0);
   }
-  if (doc.projects.length) n += 1.6;
-  for (const p of doc.projects) n += 1.2 + p.bullets.reduce((s, b) => s + wrap(b.text, 90), 0);
-  if (doc.skills.length) n += 1.6 + wrap(doc.skills.join(', '));
-  if (doc.education.length) n += 1.6 + doc.education.length;
-  if (doc.extras.length) n += 1.6 + doc.extras.length;
+  if (doc.projects.length) n += SECTION;
+  for (const p of doc.projects) n += 1.2 + p.bullets.reduce((s, b) => s + wrap(b.text, 95), 0);
+  const skills = doc.skillGroups?.length
+    ? doc.skillGroups.map((g) => `${g.label}: ${g.items.join(', ')}`)
+    : doc.skills.length
+      ? [doc.skills.join(', ')]
+      : [];
+  if (skills.length) n += SECTION + skills.reduce((s, l) => s + wrap(l), 0);
+  if (doc.extras.length)
+    n +=
+      SECTION +
+      doc.extras.reduce((s, x) => s + wrap(`${x.title ?? ''} ${x.description ?? ''}`, 95), 0);
   return Math.round(n);
 }

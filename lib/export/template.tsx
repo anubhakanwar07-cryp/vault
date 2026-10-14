@@ -1,80 +1,129 @@
 // The single resume template (SPEC §11). Written once against a tiny element factory so the same
 // definition renders to React (preview/editor) and to an HTML string (PDF) — Next.js forbids
 // react-dom/server in server code, and two hand-kept templates would drift.
-// ATS-safe: one column, no tables/icons/images, exact section headings, plain-text dates and links.
+// Layout follows the owner's own resume (Phase 8); docx.ts mirrors it.
+// ATS-safe: one column, no tables/icons/images, exact section headings, plain-text dates.
 import { createElement, Fragment, type ReactNode } from 'react';
-import { monthYear } from '@/lib/pipeline/assemble-utils';
+import { dateRange } from '@/lib/pipeline/assemble-utils';
+import { emphasize } from '@/lib/resume/emphasis';
 import type { ResumeDoc } from '@/lib/resume/types';
 
 export const SECTION_HEADINGS = {
-  summary: 'Summary',
+  education: 'Education',
   experience: 'Experience',
   projects: 'Projects',
   skills: 'Skills',
-  education: 'Education',
-  extras: 'Awards & Leadership',
+  extras: 'Awards / Position of Responsibility',
 } as const;
 
-/** Scoped CSS for the page (also inlined into the PDF HTML). */
+/** Scoped CSS for the page (also inlined into the PDF HTML). US Letter. */
 export const RESUME_CSS = `
-.rt-page { font-family: Inter, Arial, Helvetica, sans-serif; font-size: 10.5pt; line-height: 1.32; color: #111;
-  background: #fff; padding: 0.6in; box-sizing: border-box; width: 8.27in; min-height: 11.69in; }
+.rt-page { font-family: Lato, Carlito, Calibri, Arial, Helvetica, sans-serif; font-size: 10.5pt; line-height: 1.3;
+  color: #111; background: #fff; padding: 0.5in 0.6in; box-sizing: border-box; width: 8.5in; min-height: 11in; }
 .rt-page * { box-sizing: border-box; }
-.rt-name { font-size: 18pt; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
-.rt-contact { margin: 2pt 0 0; font-size: 9.5pt; color: #333; }
-.rt-headline { margin: 4pt 0 0; font-weight: 600; }
-.rt-h2 { font-size: 10.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin: 10pt 0 3pt;
-  padding-bottom: 1pt; border-bottom: 0.75pt solid #999; }
+.rt-name { font-size: 20pt; font-weight: 700; margin: 0; text-align: center; letter-spacing: 0.01em; }
+.rt-contact { margin: 3pt 0 0; font-size: 10pt; text-align: center; }
+.rt-a { color: #1a56b0; text-decoration: underline; }
+.rt-h2 { font-size: 11.5pt; font-weight: 700; margin: 9pt 0 4pt; padding-bottom: 1.5pt; border-bottom: 0.75pt solid #222; }
 .rt-row { display: flex; justify-content: space-between; gap: 12pt; align-items: baseline; }
-.rt-role { font-weight: 600; margin: 5pt 0 1pt; }
-.rt-dates { white-space: nowrap; font-size: 9.5pt; color: #333; }
-.rt-sub { font-style: italic; margin: 2pt 0 0; font-size: 10pt; }
-.rt-ul { margin: 1pt 0 0; padding-left: 13pt; }
-.rt-li { margin: 0 0 1.5pt; }
-.rt-p { margin: 0; }
+.rt-head { font-weight: 700; margin: 4pt 0 1pt; }
+.rt-dates { white-space: nowrap; font-weight: 400; font-style: italic; color: #444; font-size: 10pt; }
+.rt-sub { margin: 1pt 0 0; }
+.rt-it { font-style: italic; color: #444; }
+.rt-ul { margin: 1pt 0 2pt; padding-left: 14pt; }
+.rt-proj .rt-ul { padding-left: 28pt; }
+.rt-li { margin: 0 0 2pt; }
+.rt-p { margin: 0 0 2pt; }
+.rt-b { font-weight: 700; }
 `;
 
-type Props = { className?: string; 'data-bullet-id'?: string; key?: string | number } | null;
+type Props = {
+  className?: string;
+  href?: string;
+  'data-bullet-id'?: string;
+  key?: string | number;
+} | null;
 type Child<N> = N | string | null | undefined | false;
 export type H<N> = (tag: string, props: Props, ...children: (Child<N> | Child<N>[])[]) => N;
 
+/** Only web and mail links are rendered as links; anything else is shown as https. */
+export const safeHref = (url: string) =>
+  /^(https?:|mailto:)/i.test(url) ? url : `https://${url.replace(/^[a-z][\w+.-]*:\/*/i, '')}`;
 const join = (parts: (string | null | undefined)[], sep = ' | ') => parts.filter(Boolean).join(sep);
-const linkText = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 
 type Bullet = { bulletId: string; text: string };
-export type BulletRenderer<N> = (b: Bullet) => N | string;
+/** Renders a bullet's contents; `content` is the bullet text with emphasis already applied. */
+export type BulletRenderer<N> = (b: Bullet, content: (N | string)[]) => N | string;
 
 function build<N>(doc: ResumeDoc, h: H<N>, renderBullet?: BulletRenderer<N>): N {
+  const terms = doc.emphasis ?? [];
+  const b = (text: string, key?: string | number) => h('strong', { className: 'rt-b', key }, text);
+  const rich = (text: string): (N | string)[] =>
+    emphasize(text, terms).map((s, i) => (s.bold ? b(s.text, i) : s.text));
   const bullets = (list: Bullet[]) =>
     list.length === 0
       ? null
       : h(
           'ul',
           { className: 'rt-ul' },
-          list.map((b) =>
+          list.map((x) =>
             h(
               'li',
-              { key: b.bulletId, className: 'rt-li', 'data-bullet-id': b.bulletId },
-              renderBullet ? renderBullet(b) : b.text,
+              { key: x.bulletId, className: 'rt-li', 'data-bullet-id': x.bulletId },
+              renderBullet ? renderBullet(x, rich(x.text)) : rich(x.text),
             ),
           ),
         );
   const section = (key: string, title: string, ...children: (Child<N> | Child<N>[])[]) =>
     h('section', { key }, h('h2', { className: 'rt-h2' }, title), ...children);
+  const headRow = (left: Child<N> | Child<N>[], dates: string, key?: string | number) =>
+    h(
+      'div',
+      { key, className: 'rt-row rt-head' },
+      h('span', null, left),
+      dates ? h('span', { className: 'rt-dates' }, dates) : null,
+    );
   const hd = doc.header;
+
+  const contact: (N | string)[] = [];
+  const addContact = (part: N | string) => {
+    if (contact.length) contact.push('  |  ');
+    contact.push(part);
+  };
+  if (hd.phone) addContact(hd.phone);
+  if (hd.email)
+    addContact(h('a', { key: 'email', className: 'rt-a', href: `mailto:${hd.email}` }, hd.email));
+  for (const l of hd.links)
+    addContact(h('a', { key: l.url, className: 'rt-a', href: safeHref(l.url) }, l.label || l.url));
+
+  const skillLines = doc.skillGroups?.length
+    ? doc.skillGroups.map((g) => ({ label: g.label, items: g.items }))
+    : doc.skills.length
+      ? [{ label: null, items: doc.skills }]
+      : [];
 
   return h(
     'div',
     { className: 'rt-page' },
-    h('h1', { className: 'rt-name' }, hd.name || 'Your name'),
-    h(
-      'p',
-      { className: 'rt-contact' },
-      join([hd.email, hd.phone, hd.location, ...hd.links.map((l) => linkText(l.url))]),
-    ),
-    doc.headline ? h('p', { className: 'rt-headline' }, doc.headline) : null,
-    doc.summary
-      ? section('summary', SECTION_HEADINGS.summary, h('p', { className: 'rt-p' }, doc.summary))
+    h('h1', { className: 'rt-name' }, (hd.name || 'Your name').toUpperCase()),
+    contact.length ? h('p', { className: 'rt-contact' }, contact) : null,
+    doc.education.length
+      ? section(
+          'education',
+          SECTION_HEADINGS.education,
+          doc.education.map((e, i) =>
+            h(
+              'div',
+              { key: i },
+              headRow(e.institution ?? '', dateRange(e.start, e.end)),
+              h(
+                'p',
+                { className: 'rt-sub rt-it' },
+                join([join([e.degree, e.field], ' in '), e.grade]),
+              ),
+            ),
+          ),
+        )
       : null,
     doc.experience.length
       ? section(
@@ -84,18 +133,19 @@ function build<N>(doc: ResumeDoc, h: H<N>, renderBullet?: BulletRenderer<N>): N 
             h(
               'div',
               { key: e.roleId },
-              h(
-                'div',
-                { className: 'rt-row rt-role' },
-                h('span', null, join([`${e.title}, ${e.company}`, e.location], ' — ')),
-                h('span', { className: 'rt-dates' }, `${monthYear(e.start)} – ${monthYear(e.end)}`),
-              ),
+              headRow(`${e.title} – ${e.company}`, dateRange(e.start, e.end)),
               bullets(e.bullets),
               (e.projects ?? []).map((p) =>
                 h(
                   'div',
-                  { key: p.name },
-                  h('p', { className: 'rt-sub' }, p.name),
+                  { key: p.name, className: 'rt-proj' },
+                  h(
+                    'p',
+                    { className: 'rt-sub' },
+                    b(p.name),
+                    p.oneLiner ? ' — ' : null,
+                    p.oneLiner ? rich(p.oneLiner) : null,
+                  ),
                   bullets(p.bullets),
                 ),
               ),
@@ -111,38 +161,26 @@ function build<N>(doc: ResumeDoc, h: H<N>, renderBullet?: BulletRenderer<N>): N 
             h(
               'div',
               { key: p.projectId },
-              h(
-                'p',
-                { className: 'rt-role rt-p' },
-                join([p.name, p.url ? linkText(p.url) : null], ' — '),
+              headRow(
+                p.url ? h('a', { className: 'rt-a', href: safeHref(p.url) }, p.name) : p.name,
+                dateRange(p.start, p.end),
               ),
               bullets(p.bullets),
             ),
           ),
         )
       : null,
-    doc.skills.length
+    skillLines.length
       ? section(
           'skills',
           SECTION_HEADINGS.skills,
-          h('p', { className: 'rt-p' }, doc.skills.join(', ')),
-        )
-      : null,
-    doc.education.length
-      ? section(
-          'education',
-          SECTION_HEADINGS.education,
-          doc.education.map((e, i) =>
+          skillLines.map((g, i) =>
             h(
-              'div',
-              { key: i, className: 'rt-row' },
-              h(
-                'span',
-                null,
-                join([join([e.degree, e.field], ', '), e.institution], ' — ') +
-                  (e.grade ? ` | ${e.grade}` : ''),
-              ),
-              h('span', { className: 'rt-dates' }, e.end ? e.end.slice(0, 4) : ''),
+              'p',
+              { key: i, className: 'rt-p' },
+              g.label ? b(`${g.label}:`) : null,
+              g.label ? ' ' : null,
+              g.items.join(', '),
             ),
           ),
         )
@@ -158,13 +196,22 @@ function build<N>(doc: ResumeDoc, h: H<N>, renderBullet?: BulletRenderer<N>): N 
               h(
                 'li',
                 { key: i, className: 'rt-li' },
-                join([x.title, x.issuer, x.date?.slice(0, 4)], ', '),
+                b(extraTitle(x)),
+                x.description ? ' — ' : null,
+                x.description ?? null,
               ),
             ),
           ),
         )
       : null,
   );
+}
+
+/** "Title, Issuer", plus the year when the title doesn't already carry it. */
+export function extraTitle(x: ResumeDoc['extras'][number]): string {
+  const base = join([x.title, x.issuer], ', ');
+  const year = x.date?.slice(0, 4);
+  return year && !base.includes(year) ? `${base} (${year})` : base;
 }
 
 // ---- React rendering (preview + editor)
@@ -195,6 +242,7 @@ const esc = (s: string) =>
 const htmlH: H<Html> = (tag, props, ...children) => {
   const attrs = [
     props?.className ? ` class="${esc(props.className)}"` : '',
+    props?.href ? ` href="${esc(props.href)}"` : '',
     props?.['data-bullet-id'] ? ` data-bullet-id="${esc(props['data-bullet-id'])}"` : '',
   ].join('');
   const inner = children

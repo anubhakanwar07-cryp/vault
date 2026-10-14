@@ -1,10 +1,9 @@
 import 'server-only';
 import { similarity } from '@/lib/import/merge';
 import { callLLM } from '@/lib/llm/client';
-import * as headlinePrompt from '@/lib/llm/prompts/headlineSummary';
 import * as rewritePrompt from '@/lib/llm/prompts/rewriteBullet';
 import type { ParsedJD } from '@/lib/llm/schemas/jd';
-import { headlineSummaryOutput, rewriteOutput } from '@/lib/llm/schemas/pipeline';
+import { rewriteOutput } from '@/lib/llm/schemas/pipeline';
 import type { AchievementRecord, EvidenceMatrix, Requirement } from './types';
 
 export type RewriteContext = {
@@ -130,44 +129,6 @@ export async function rewriteBullet(
     userId: ctx.userId,
     pipelineRunId: ctx.pipelineRunId,
     maxTokens: 400,
-  });
-}
-
-export async function writeHeadlineSummary(
-  ctx: RewriteContext,
-  records: AchievementRecord[],
-  profile: Record<string, unknown>,
-  retryReasons?: string[],
-) {
-  return callLLM({
-    stage: 'summary',
-    tier: 'strong',
-    temperature: 0.4,
-    system: headlinePrompt.system,
-    user: headlinePrompt.buildUser({
-      roleTitle: ctx.jd.role_title,
-      roleFamily: ctx.jd.role_family,
-      seniority: ctx.jd.seniority,
-      companyStage: ctx.jd.company_stage,
-      profile,
-      achievements: records.map((r) =>
-        compact({
-          id: r.id,
-          action: r.action,
-          result: r.result,
-          metric_value: r.metricValue,
-          metric_confidence: r.metricConfidence === 'none' ? null : r.metricConfidence,
-          tools: r.tools,
-          role: r.role ? `${r.role.title}, ${r.role.company}` : r.project?.name,
-        }),
-      ),
-      retryReasons,
-    }),
-    schema: headlineSummaryOutput,
-    promptVersion: headlinePrompt.version,
-    userId: ctx.userId,
-    pipelineRunId: ctx.pipelineRunId,
-    maxTokens: 800,
   });
 }
 

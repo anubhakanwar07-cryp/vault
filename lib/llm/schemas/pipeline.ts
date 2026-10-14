@@ -2,12 +2,6 @@ import { z } from 'zod';
 
 export const rewriteOutput = z.object({ bullet: z.string().trim().min(10) });
 
-export const headlineSummaryOutput = z.object({
-  headline: z.string().trim().min(3),
-  summary: z.string().trim().min(10),
-  source_achievement_ids: z.array(z.string()).default([]),
-});
-
 export const verifyOutput = z.object({
   results: z.array(
     z.object({

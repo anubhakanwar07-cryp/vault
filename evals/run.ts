@@ -72,8 +72,7 @@ async function main() {
   const { resumes, resumeBullets, pipelineRuns } = await import('@/lib/db/schema');
   const { eq } = await import('drizzle-orm');
   const { loadRecords } = await import('@/lib/pipeline/records');
-  const { verifyBullet, verifySummaryLine, bannedPhrasesIn } =
-    await import('@/lib/pipeline/verify-code');
+  const { verifyBullet, bannedPhrasesIn } = await import('@/lib/pipeline/verify-code');
   const { resumeDoc, matchReport, allBullets } = await import('@/lib/resume/types');
   const { recruiterSimOutput } = await import('@/lib/llm/schemas/pipeline');
 
@@ -145,13 +144,9 @@ async function main() {
             if (!allBullets(doc).some((x) => x.bulletId === b.id)) continue;
             if (verifyBullet(b.finalText, byId.get(b.achievementId!)!, vctx).length) fabrications++;
           }
-          const profileText = '';
-          for (const line of [doc.headline, doc.summary]) {
-            if (line && verifySummaryLine(line, records, profileText, vctx).length) fabrications++;
-          }
-          const allText = [doc.headline, doc.summary, ...allBullets(doc).map((b) => b.text)].join(
-            '\n',
-          );
+          const allText = allBullets(doc)
+            .map((b) => b.text)
+            .join('\n');
           const picked = bullets
             .map((b) => idToKey[b.achievementId!])
             .filter((k): k is string => !!k);

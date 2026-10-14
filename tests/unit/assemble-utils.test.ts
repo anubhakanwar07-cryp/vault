@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { orderSkills, pickExtras, weightedCoverage } from '@/lib/pipeline/assemble-utils';
+import {
+  dateRange,
+  groupSkills,
+  orderSkills,
+  pickExtras,
+  weightedCoverage,
+} from '@/lib/pipeline/assemble-utils';
 import type { AchievementRecord } from '@/lib/pipeline/types';
 
 const r = (skills: string[], tools: string[]) =>
@@ -22,6 +28,35 @@ describe('orderSkills', () => {
     const many = Array.from({ length: 20 }, (_, i) => `s${i}`);
     expect(orderSkills(many, [r(many, [])], [])).toHaveLength(12);
   });
+});
+
+describe('groupSkills', () => {
+  const kw = [{ term: 'SQL', synonyms: [], weight: 5 }];
+  it('splits tools/technologies from product skills, each ordered', () => {
+    const out = groupSkills(
+      ['BigQuery', 'Figma'],
+      ['SQL', 'Roadmapping', 'A/B Testing'],
+      [r(['Roadmapping', 'SQL'], ['BigQuery', 'Figma']), r(['A/B Testing'], [])],
+      kw,
+      'pm',
+    );
+    expect(out).toEqual([
+      { label: 'Technical', items: ['SQL', 'BigQuery', 'Figma'] },
+      { label: 'Product', items: ['A/B Testing', 'Roadmapping'] },
+    ]);
+  });
+  it('labels the second line Core outside product roles and drops empty lines', () => {
+    expect(groupSkills([], ['Hiring'], [r(['Hiring'], [])], [], 'ops')).toEqual([
+      { label: 'Core', items: ['Hiring'] },
+    ]);
+  });
+});
+
+it('dateRange', () => {
+  expect(dateRange('2025-07-01', null)).toBe('July 2025 – Present');
+  expect(dateRange('2021-11-01', '2025-05-01')).toBe('November 2021 – May 2025');
+  expect(dateRange(null, '2025-05-01')).toBe('May 2025');
+  expect(dateRange(null, null)).toBe('');
 });
 
 describe('pickExtras', () => {

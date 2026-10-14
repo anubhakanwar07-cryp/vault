@@ -121,10 +121,11 @@ export function ResumeEditor(props: Props) {
       } else setAlternatives(res.data);
     });
 
-  const renderBullet = (b: { bulletId: string; text: string }): ReactNode => (
+  const renderBullet = (b: { bulletId: string; text: string }, content: ReactNode[]): ReactNode => (
     <EditableBullet
       key={b.bulletId}
       text={b.text}
+      content={content}
       busy={busy === b.bulletId}
       editing={editing === b.bulletId}
       warnings={warnings[b.bulletId] ?? []}
@@ -345,6 +346,8 @@ export function ResumeEditor(props: Props) {
 
 function EditableBullet(p: {
   text: string;
+  /** The bullet as the template renders it (with bold emphasis). */
+  content: ReactNode[];
   busy: boolean;
   editing: boolean;
   warnings: string[];
@@ -426,7 +429,7 @@ function EditableBullet(p: {
               : undefined
         }
       >
-        {p.text}
+        {p.content}
       </span>
       {p.warnings.length > 0 && (
         <span
