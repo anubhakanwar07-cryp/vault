@@ -15,10 +15,19 @@ describe('isPrivateAddress', () => {
     'fd00::1',
     'fe80::1',
     '::ffff:127.0.0.1',
+    '::ffff:7f00:1',
+    '::ffff:a9fe:a9fe',
+    '64:ff9b::a9fe:a9fe',
+    '2002:7f00:1::',
+    '0:0:0:0:0:0:0:1',
+    'fec0::1',
+    '198.18.0.1',
+    '192.0.0.8',
     'not-an-ip',
   ])('blocks %s', (ip) => expect(isPrivateAddress(ip)).toBe(true));
-  it.each(['8.8.8.8', '172.32.0.1', '76.76.21.21', '2606:4700::1111'])('allows %s', (ip) =>
-    expect(isPrivateAddress(ip)).toBe(false),
+  it.each(['8.8.8.8', '172.32.0.1', '76.76.21.21', '2606:4700::1111', '64:ff9b::808:808'])(
+    'allows %s',
+    (ip) => expect(isPrivateAddress(ip)).toBe(false),
   );
 });
 

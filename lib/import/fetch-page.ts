@@ -1,5 +1,11 @@
 import 'server-only';
+import { lookup as dnsLookup, type LookupAddress } from 'node:dns';
 import { lookup } from 'node:dns/promises';
+import http, { type IncomingMessage } from 'node:http';
+import https from 'node:https';
+import type { LookupFunction } from 'node:net';
+import { Readable } from 'node:stream';
+import zlib from 'node:zlib';
 import { launchBrowser } from '@/lib/browser';
 import { htmlToText, isPrivateAddress, pickProjectLinks, type PageText } from './page-text';
 
@@ -49,55 +55,154 @@ export async function assertPublicUrl(raw: string, opts: FetchOptions = {}): Pro
   return url;
 }
 
+/**
+ * DNS lookup for outgoing sockets that refuses private addresses. Because the socket connects to the
+ * address this returns, a host can't pass the check and then re-resolve somewhere internal.
+ */
+function guardedLookup(allowPrivate: boolean): LookupFunction {
+  return (hostname, options, callback) => {
+    dnsLookup(hostname, { ...options, all: true }, (err, addresses) => {
+      if (err) return callback(err, '', 0);
+      const list = addresses as unknown as LookupAddress[];
+      const bad = !allowPrivate && list.some((a) => isPrivateAddress(a.address));
+      if (bad || list.length === 0) {
+        return callback(
+          Object.assign(new Error(`private address for ${hostname}`), { code: 'EPRIVATE' }),
+          '',
+          0,
+        );
+      }
+      if (options.all) return callback(null, list);
+      callback(null, list[0]!.address, list[0]!.family);
+    });
+  };
+}
+
+function request(url: URL, allowPrivate: boolean): Promise<IncomingMessage> {
+  const mod = url.protocol === 'http:' ? http : https;
+  return new Promise((resolve, reject) => {
+    const req = mod.get(
+      url,
+      {
+        lookup: guardedLookup(allowPrivate),
+        timeout: TIMEOUT_MS,
+        headers: {
+          'user-agent': UA,
+          accept: 'text/html,application/xhtml+xml',
+          'accept-encoding': 'gzip, deflate, br',
+        },
+      },
+      resolve,
+    );
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+  });
+}
+
+/** Reads at most MAX_BYTES of the (decompressed) body, then stops the download. */
+async function readCapped(res: IncomingMessage): Promise<string> {
+  const enc = (res.headers['content-encoding'] ?? '').toLowerCase();
+  let body: Readable = res;
+  if (enc === 'gzip' || enc === 'x-gzip') body = res.pipe(zlib.createGunzip());
+  else if (enc === 'deflate') body = res.pipe(zlib.createInflate());
+  else if (enc === 'br') body = res.pipe(zlib.createBrotliDecompress());
+  const chunks: Buffer[] = [];
+  let size = 0;
+  const deadline = setTimeout(() => res.destroy(new Error('timeout')), TIMEOUT_MS);
+  try {
+    for await (const chunk of body) {
+      const buf = chunk as Buffer;
+      chunks.push(buf);
+      size += buf.length;
+      if (size >= MAX_BYTES) break;
+    }
+  } finally {
+    clearTimeout(deadline);
+    res.destroy();
+  }
+  return Buffer.concat(chunks).subarray(0, MAX_BYTES).toString('utf8');
+}
+
 async function fetchHtml(
   start: string,
   opts: FetchOptions,
 ): Promise<{ url: string; html: string }> {
-  let current = (await assertPublicUrl(start, opts)).toString();
+  let current = await assertPublicUrl(start, opts);
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    const res = await fetch(current, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      headers: { 'user-agent': UA, accept: 'text/html,application/xhtml+xml' },
-    }).catch((err: unknown) => {
+    const res = await request(current, Boolean(opts.allowPrivate)).catch((err: unknown) => {
+      if ((err as { code?: string }).code === 'EPRIVATE') {
+        throw new FetchPageError(
+          `private ${current.hostname}`,
+          'That link points to a private network address.',
+        );
+      }
       throw new FetchPageError(`fetch ${current}: ${String(err)}`, 'That site didn’t respond.');
     });
-    if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
-      current = (
-        await assertPublicUrl(new URL(res.headers.get('location')!, current).toString(), opts)
-      ).toString();
+    const status = res.statusCode ?? 0;
+    const location = res.headers.location;
+    if (status >= 300 && status < 400 && location) {
+      res.destroy();
+      current = await assertPublicUrl(new URL(location, current).toString(), opts);
       continue;
     }
-    if (!res.ok) {
+    if (status < 200 || status >= 300) {
+      res.destroy();
       throw new FetchPageError(
-        `status ${res.status} ${current}`,
-        `That site refused the request (HTTP ${res.status}).`,
+        `status ${status} ${current}`,
+        `That site refused the request (HTTP ${status}).`,
       );
     }
-    const type = res.headers.get('content-type') ?? '';
+    const type = res.headers['content-type'] ?? '';
     if (!/html|xml|text\/plain/i.test(type)) {
+      res.destroy();
       throw new FetchPageError(`type ${type}`, 'That link isn’t a web page.');
     }
-    const len = Number(res.headers.get('content-length') ?? 0);
-    if (len > MAX_BYTES) throw new FetchPageError('too large', 'That page is too large to read.');
-    const html = await res.text();
-    return { url: current, html: html.slice(0, MAX_BYTES) };
+    const len = Number(res.headers['content-length'] ?? 0);
+    if (len > MAX_BYTES) {
+      res.destroy();
+      throw new FetchPageError('too large', 'That page is too large to read.');
+    }
+    return { url: current.toString(), html: await readCapped(res) };
   }
   throw new FetchPageError('too many redirects', 'That link redirects too many times.');
 }
 
+/** True if a request made by the rendered page may go out: http(s) to public hosts, or local data. */
+async function allowedFromPage(
+  raw: string,
+  cache: Map<string, Promise<boolean>>,
+): Promise<boolean> {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (url.protocol === 'data:' || url.protocol === 'blob:') return true;
+  if (!/^https?:$/.test(url.protocol)) return false;
+  const host = url.hostname.replace(/^\[|\]$/g, '');
+  let ok = cache.get(host);
+  if (!ok) {
+    ok = lookup(host, { all: true })
+      .then((addrs) => addrs.length > 0 && !addrs.some((a) => isPrivateAddress(a.address)))
+      .catch(() => false);
+    cache.set(host, ok);
+  }
+  return ok;
+}
+
 /** Renders a JavaScript-built page in headless Chrome and returns its final HTML. */
-async function renderHtml(url: string): Promise<string> {
+async function renderHtml(url: string, opts: FetchOptions): Promise<string> {
   const browser = await launchBrowser();
   try {
     const page = await browser.newPage();
     await page.setUserAgent(UA);
-    // Block requests to private networks from inside the rendered page too.
+    // Every request the page makes (scripts, XHR, redirects) gets the same DNS-based check.
     await page.setRequestInterception(true);
+    const cache = new Map<string, Promise<boolean>>();
     page.on('request', (req) => {
-      const host = new URL(req.url()).hostname;
-      if (/^(localhost|127\.|10\.|192\.168\.|169\.254\.)/.test(host)) void req.abort();
-      else void req.continue();
+      const check = opts.allowPrivate ? Promise.resolve(true) : allowedFromPage(req.url(), cache);
+      void check.then((ok) => (ok ? req.continue() : req.abort('blockedbyclient')));
     });
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 25_000 });
     return await page.content();
@@ -116,7 +221,7 @@ export async function fetchPageText(
   let finalHtml = html;
   if (page.text.length < MIN_USEFUL_TEXT && opts.render !== false) {
     try {
-      finalHtml = await renderHtml(url);
+      finalHtml = await renderHtml(url, opts);
       const rendered = htmlToText(finalHtml, url);
       if (rendered.text.length > page.text.length) page = rendered;
     } catch (err) {
