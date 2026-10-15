@@ -131,6 +131,8 @@ export async function rewriteBullet(
     userId: ctx.userId,
     pipelineRunId: ctx.pipelineRunId,
     signal: ctx.signal,
+    // One short bullet: retry a stalled request quickly rather than waiting out the 45 s default.
+    timeoutMs: 20_000,
     maxTokens: 400,
   });
 }

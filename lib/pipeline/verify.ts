@@ -38,6 +38,8 @@ async function verifyBatch(
     userId: ctx.userId,
     pipelineRunId: ctx.pipelineRunId,
     signal: ctx.signal,
+    // A 5-line batch normally answers in ~4 s; a stalled request should retry long before 45 s.
+    timeoutMs: 20_000,
     maxTokens: 4000,
   });
   const failures: Record<string, string[]> = {};
