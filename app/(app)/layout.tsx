@@ -1,5 +1,6 @@
 import { Suspense, type ReactNode } from 'react';
 import { SidebarNav } from '@/components/shell/sidebar-nav';
+import { ThemeToggle } from '@/components/shell/theme-toggle';
 import { isAdmin, requireUser } from '@/lib/auth';
 
 // Every page here depends on the signed-in user, so navigations block on the server.
@@ -10,7 +11,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-svh flex-col md:flex-row">
       <aside className="flex shrink-0 flex-col gap-4 border-b p-3 md:w-56 md:border-r md:border-b-0 md:p-4">
-        <div className="px-3 text-sm font-semibold">Resume Tailor</div>
+        <div className="flex items-center justify-between gap-2 px-3">
+          <span className="text-sm font-semibold">Resume Tailor</span>
+          <ThemeToggle />
+        </div>
         <Suspense fallback={<SidebarNav showAdmin={false} />}>
           <SidebarNavForUser />
         </Suspense>
