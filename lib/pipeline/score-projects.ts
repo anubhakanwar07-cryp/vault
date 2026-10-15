@@ -73,6 +73,8 @@ export async function scoreProjects(opts: {
           // A little reasoning makes functional (not lexical) judgements far more consistent.
           reasoningEffort: 'low',
           system: prompt.system,
+          // SPEC-QUESTION: the task asks for the JD's "responsibilities", which ParsedJD doesn't have;
+          // core_problems (what the person will do) plus every must-have and nice-to-have stand in.
           user: prompt.buildUser({
             roleTitle: opts.jd.role_title,
             coreProblems: opts.jd.core_problems,
