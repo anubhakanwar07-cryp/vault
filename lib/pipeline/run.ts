@@ -1,8 +1,9 @@
 import 'server-only';
-import { and, desc, eq, gt, lt, max, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, lt, sql } from 'drizzle-orm';
 import { adminDb, withUser } from '@/lib/db/client';
 import { getProfile } from '@/lib/db/queries/vault';
 import { getJob, roleSpans } from '@/lib/db/queries/jobs';
+import { nextResumeVersion } from '@/lib/db/queries/resumes';
 import {
   achievements,
   education as educationT,
@@ -397,16 +398,13 @@ export async function runTailorPipeline(opts: {
     });
 
     resumeId = await withUser(userId, async (tx) => {
-      const [{ v } = { v: 0 }] = await tx
-        .select({ v: max(resumes.version) })
-        .from(resumes)
-        .where(eq(resumes.jobId, jobId));
+      const version = await nextResumeVersion(tx, jobId);
       const [row] = await tx
         .insert(resumes)
         .values({
           userId,
           jobId,
-          version: (v ?? 0) + 1,
+          version,
           content: doc,
           matchReport: report,
           pipelineRunId,

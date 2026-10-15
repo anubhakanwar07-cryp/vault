@@ -75,14 +75,14 @@ test('sign in → import resume → paste JD → confirm → tailor → edit →
   // 7. Export PDF
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.getByRole('link', { name: 'PDF' }).click(),
+    page.getByRole('button', { name: 'PDF' }).click(),
   ]);
   expect(download.suggestedFilename()).toMatch(/\.pdf$/);
   const pdf = await readFile((await download.path())!);
   expect(pdf.subarray(0, 4).toString()).toBe('%PDF');
 
   // 8. Log application (pre-filled from the editor)
-  await page.getByRole('link', { name: 'Log application' }).click();
+  await page.getByRole('button', { name: 'Log application' }).click();
   await expect(page.getByRole('heading', { name: 'Log an application' })).toBeVisible();
   await expect(page.getByLabel('Company')).not.toHaveValue('');
   await page.getByRole('button', { name: 'Log application' }).last().click();

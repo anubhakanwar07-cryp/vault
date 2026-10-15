@@ -64,10 +64,12 @@ export function bulletIds(doc: ResumeDoc): string[] {
 }
 
 /**
- * Rough page-fit estimate in rendered lines for one page (SPEC §10 page-fit indicator).
- * ~100 characters per line at 10.5pt across a 7.3in text column (US Letter); ~58 lines per page.
+ * Rough page-fit estimate in rendered lines for one page (SPEC §10 page-fit indicator). The editor
+ * measures the rendered preview instead when it can; this is the fallback.
+ * ~100 characters per line at 10.5pt across a 7.3in text column (US Letter). 10in of usable height
+ * at a 13.65pt line (10.5pt × 1.3) is ~52 lines before section and bullet spacing.
  */
-export const LINES_PER_PAGE = 58;
+export const LINES_PER_PAGE = 52;
 export function estimateLines(doc: ResumeDoc): number {
   const wrap = (s: string, width = 100) => Math.max(1, Math.ceil(s.length / width));
   const SECTION = 1.6;

@@ -1,8 +1,9 @@
 import 'server-only';
 import { diffWords } from 'diff';
-import { desc, eq, max, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { withUser } from '@/lib/db/client';
 import { getJob } from '@/lib/db/queries/jobs';
+import { nextResumeVersion } from '@/lib/db/queries/resumes';
 import { achievements, resumeBullets, resumes, styleRules, userEdits } from '@/lib/db/schema';
 import { similarity } from '@/lib/import/merge';
 import type { ParsedJD } from '@/lib/llm/schemas/jd';
@@ -182,10 +183,7 @@ function refreshReport(
 async function ensureDraft(userId: string, l: Loaded): Promise<Loaded> {
   if (l.status === 'draft') return l;
   const forked = await withUser(userId, async (tx) => {
-    const [{ v } = { v: 0 }] = await tx
-      .select({ v: max(resumes.version) })
-      .from(resumes)
-      .where(eq(resumes.jobId, l.jobId));
+    const version = await nextResumeVersion(tx, l.jobId);
     const [orig] = await tx.select().from(resumes).where(eq(resumes.id, l.resumeId));
     const oldRows = await tx
       .select()
@@ -218,7 +216,7 @@ async function ensureDraft(userId: string, l: Loaded): Promise<Loaded> {
       .values({
         userId,
         jobId: l.jobId,
-        version: (v ?? 0) + 1,
+        version,
         status: 'draft',
         content: doc,
         matchReport: report,
@@ -257,28 +255,48 @@ export type EditResult = {
   warnings?: string[];
 };
 
-async function save(userId: string, l: Loaded, doc: ResumeDoc): Promise<EditResult> {
-  const achievementByBullet = new Map<string, string>();
-  const rows = await withUser(userId, (tx) =>
-    tx
+/**
+ * Applies `mutate` to the resume as currently stored, under a row lock, and saves it. Re-reading
+ * inside the lock means two quick edits on different bullets can't overwrite each other.
+ */
+async function save(
+  userId: string,
+  l: Loaded,
+  mutate: (doc: ResumeDoc) => ResumeDoc,
+): Promise<EditResult> {
+  return withUser(userId, async (tx) => {
+    const [row] = await tx
+      .select({ content: resumes.content, matchReport: resumes.matchReport })
+      .from(resumes)
+      .where(eq(resumes.id, l.resumeId))
+      .for('update');
+    if (!row) throw new EditorError('Resume not found');
+    const fresh: Loaded = {
+      ...l,
+      doc: resumeDoc.parse(row.content),
+      report: matchReportSchema.parse(row.matchReport),
+    };
+    const doc = mutate(fresh.doc);
+    const ids = bulletIds(doc);
+    const onPage = new Set(ids);
+    const rows = await tx
       .select({ id: resumeBullets.id, a: resumeBullets.achievementId })
       .from(resumeBullets)
-      .where(eq(resumeBullets.resumeId, l.resumeId)),
-  );
-  for (const r of rows) if (r.a) achievementByBullet.set(r.id, r.a);
-  const report = refreshReport(l, doc, achievementByBullet);
-  await withUser(userId, async (tx) => {
+      .where(eq(resumeBullets.resumeId, l.resumeId));
+    // Only bullets still on the page: deleted or swapped-out rows must not claim coverage.
+    const achievementByBullet = new Map<string, string>();
+    for (const r of rows) if (r.a && onPage.has(r.id)) achievementByBullet.set(r.id, r.a);
+    const report = refreshReport(fresh, doc, achievementByBullet);
     await tx
       .update(resumes)
       .set({ content: doc, matchReport: report })
       .where(eq(resumes.id, l.resumeId));
     // Positions follow page order.
-    const ids = bulletIds(doc);
     for (const [position, id] of ids.entries()) {
       await tx.update(resumeBullets).set({ position }).where(eq(resumeBullets.id, id));
     }
+    return { resumeId: l.resumeId, doc, report };
   });
-  return { resumeId: l.resumeId, doc, report };
 }
 
 const mapId = (l: Loaded, bulletId: string) => l.remap?.get(bulletId) ?? bulletId;
@@ -331,7 +349,7 @@ export async function editBullet(
     tx.update(resumeBullets).set({ finalText: clean }).where(eq(resumeBullets.id, id)),
   );
   await logEdit(userId, id, 'rewrite', before, clean);
-  const res = await save(userId, l, setBulletText(l.doc, id, clean));
+  const res = await save(userId, l, (d) => setBulletText(d, id, clean));
   return { ...res, bulletId: id, warnings: await warningsFor(userId, l, id, clean) };
 }
 
@@ -402,7 +420,7 @@ export async function regenerateBullet(
       })
       .where(eq(resumeBullets.id, id)),
   );
-  const res = await save(userId, l, setBulletText(l.doc, id, o.text));
+  const res = await save(userId, l, (d) => setBulletText(d, id, o.text));
   return {
     ...res,
     bulletId: id,
@@ -464,7 +482,8 @@ export async function swapBullet(
 ): Promise<EditResult> {
   const l = await ensureDraft(userId, await load(userId, resumeId));
   const id = mapId(l, bulletId);
-  const before = findBullet(l.doc, id)?.text ?? null;
+  const before = findBullet(l.doc, id)?.text;
+  if (before === undefined) throw new EditorError('That bullet is no longer on the page.');
   const [recs, { ctx, verifyCtx, requirements }] = await Promise.all([
     records(userId, [achievementId]),
     contexts(userId, l),
@@ -491,7 +510,7 @@ export async function swapBullet(
     }),
   );
   await logEdit(userId, id, 'swap', before, o.text);
-  const res = await save(userId, l, replaceBullet(l.doc, id, { bulletId: newId, text: o.text }));
+  const res = await save(userId, l, (d) => replaceBullet(d, id, { bulletId: newId, text: o.text }));
   return { ...res, bulletId: newId };
 }
 
@@ -502,8 +521,11 @@ export async function deleteBullet(
 ): Promise<EditResult> {
   const l = await ensureDraft(userId, await load(userId, resumeId));
   const id = mapId(l, bulletId);
-  await logEdit(userId, id, 'delete', findBullet(l.doc, id)?.text ?? null, null);
-  return save(userId, l, removeBullet(l.doc, id));
+  const before = findBullet(l.doc, id)?.text;
+  if (before === undefined) throw new EditorError('That bullet is no longer on the page.');
+  const res = await save(userId, l, (d) => removeBullet(d, id));
+  await logEdit(userId, id, 'delete', before, null);
+  return res;
 }
 
 export async function moveBullet(
@@ -514,8 +536,16 @@ export async function moveBullet(
 ): Promise<EditResult> {
   const l = await ensureDraft(userId, await load(userId, resumeId));
   const id = mapId(l, bulletId);
-  await logEdit(userId, id, 'reorder', null, null);
-  return save(userId, l, moveInDoc(l.doc, id, dir));
+  if (!findBullet(l.doc, id)) throw new EditorError('That bullet is no longer on the page.');
+  let moved = false;
+  const res = await save(userId, l, (d) => {
+    const next = moveInDoc(d, id, dir);
+    moved = bulletIds(next).join() !== bulletIds(d).join();
+    return next;
+  });
+  // Moving the first bullet up (or the last down) changes nothing and isn't an edit.
+  if (moved) await logEdit(userId, id, 'reorder', null, null);
+  return res;
 }
 
 export async function markFinal(userId: string, resumeId: string) {

@@ -2,9 +2,8 @@ import type { NextRequest } from 'next/server';
 import { getJob } from '@/lib/db/queries/jobs';
 import { getResume } from '@/lib/db/queries/resumes';
 import { renderDocx } from '@/lib/export/docx';
-import { exportFilename } from '@/lib/export/filename';
+import { contentDisposition, exportFilename, unicodeFilename } from '@/lib/export/filename';
 import { renderPdf } from '@/lib/export/pdf';
-import { markFinal } from '@/lib/resume/editor';
 import { uploadUserFile } from '@/lib/storage';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -16,7 +15,10 @@ const TYPES = {
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 } as const;
 
-/** GET /api/export/[resumeId]?format=pdf|docx — exporting freezes this version as final (SPEC §10). */
+/**
+ * GET /api/export/[resumeId]?format=pdf|docx. Read-only: the editor marks the version final (a
+ * server action, so it can't be triggered cross-site) before it downloads (SPEC §10).
+ */
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/export/[resumeId]'>) {
   const { resumeId } = await ctx.params;
   const format = req.nextUrl.searchParams.get('format') === 'docx' ? 'docx' : 'pdf';
@@ -31,16 +33,21 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/export/[resu
   if (!resume) return new Response('Not found', { status: 404 });
   const job = resume.jobId ? await getJob(user.id, resume.jobId) : null;
 
-  const bytes =
-    format === 'pdf' ? await renderPdf(resume.content) : await renderDocx(resume.content);
-  const filename = exportFilename(
+  let bytes: Uint8Array;
+  try {
+    bytes = format === 'pdf' ? await renderPdf(resume.content) : await renderDocx(resume.content);
+  } catch (err) {
+    console.error('[export] render failed', err);
+    return new Response('Export failed. Please try again.', { status: 500 });
+  }
+  const args = [
     resume.content.header.name,
     job?.company ?? null,
     job?.roleTitle ?? null,
     format,
-  );
+  ] as const;
+  const filename = exportFilename(...args);
 
-  await markFinal(user.id, resumeId);
   // Keep a private copy of exactly what was sent (best-effort).
   await uploadUserFile(user.id, 'exports', filename, new Uint8Array(bytes), TYPES[format]).catch(
     (err: unknown) => console.error('[export] storage copy failed', err),
@@ -49,7 +56,7 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/export/[resu
   return new Response(new Uint8Array(bytes), {
     headers: {
       'content-type': TYPES[format],
-      'content-disposition': `attachment; filename="${filename}"`,
+      'content-disposition': contentDisposition(filename, unicodeFilename(...args)),
       'cache-control': 'no-store',
     },
   });

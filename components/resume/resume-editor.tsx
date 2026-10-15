@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import {
   alternativesAction,
@@ -33,6 +33,7 @@ import type { ActionResult } from '@/lib/actions';
 import { RESUME_CSS, ResumeTemplate } from '@/lib/export/template';
 import type { RecruiterSim } from '@/lib/llm/schemas/pipeline';
 import { estimateLines, LINES_PER_PAGE } from '@/lib/resume/doc-ops';
+import { MAX_BULLET_CHARS } from '@/lib/resume/limits';
 import type { Alternative, EditResult } from '@/lib/resume/editor';
 import type { MatchReport, ResumeDoc } from '@/lib/resume/types';
 import { cn } from '@/lib/utils';
@@ -75,16 +76,28 @@ export function ResumeEditor(props: Props) {
   const [swapFor, setSwapFor] = useState<string | null>(null);
   const [alternatives, setAlternatives] = useState<Alternative[] | null>(null);
   const [sourceFor, setSourceFor] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  // Every server action runs through this queue, one at a time and in click order, so a quick
+  // edit + move (or a double click) can't race. Export and logging wait for it to drain.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+  // Set once an edit forked a new draft; this page is about to navigate away from a stale version.
+  const forked = useRef(false);
+  const enqueue = <T,>(task: () => Promise<T>): Promise<T> => {
+    const next = queue.current.then(task, task);
+    queue.current = next.catch(() => {});
+    return next;
+  };
 
+  const previewRef = useRef<HTMLDivElement>(null);
+  const fill = usePageFill(previewRef, doc);
   const lines = estimateLines(doc);
-  const overflow = lines > LINES_PER_PAGE;
+  const overflow = fill !== null ? fill > 1 : lines > LINES_PER_PAGE;
 
   /** Applies an edit result; navigates if the edit forked a new draft version from a final one. */
   const apply = (res: ActionResult<EditResult>, label?: string) => {
     if (!res.ok) return void toast.error(res.error);
     const r = res.data;
     if (r.resumeId !== props.resumeId) {
+      forked.current = true;
       toast.info('This version was final, so your edit started a new draft version.');
       router.replace(`/tailor/${props.jobId}/resume/${r.resumeId}`);
       return;
@@ -101,24 +114,59 @@ export function ResumeEditor(props: Props) {
     fn: () => Promise<ActionResult<EditResult>>,
     label?: string,
   ) =>
-    startTransition(async () => {
+    void enqueue(async () => {
+      if (forked.current) return;
       setBusy(bulletId ?? 'page');
       try {
         apply(await fn(), label);
+      } catch {
+        toast.error('Something went wrong. Please try again.');
       } finally {
         setBusy(null);
       }
     });
 
-  const openSwap = (bulletId: string) =>
-    startTransition(async () => {
-      setSwapFor(bulletId);
-      setAlternatives(null);
-      const res = await alternativesAction(props.resumeId, bulletId);
-      if (!res.ok) {
-        toast.error(res.error);
-        setSwapFor(null);
-      } else setAlternatives(res.data);
+  const openSwap = async (bulletId: string) => {
+    setSwapFor(bulletId);
+    setAlternatives(null);
+    const res = await alternativesAction(props.resumeId, bulletId);
+    if (!res.ok) {
+      toast.error(res.error);
+      setSwapFor(null);
+    } else setAlternatives(res.data);
+  };
+
+  const finalise = async (): Promise<boolean> => {
+    if (status === 'final') return true;
+    const res = await markFinalAction(props.resumeId, props.jobId);
+    if (!res.ok) {
+      toast.error(res.error);
+      return false;
+    }
+    setStatus('final');
+    return true;
+  };
+
+  const exportAs = (format: 'pdf' | 'docx') =>
+    void enqueue(async () => {
+      if (forked.current || !(await finalise())) return;
+      setBusy('page');
+      try {
+        const res = await fetch(`/api/export/${props.resumeId}?format=${format}`);
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        const name =
+          res.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1] ??
+          `Resume.${format}`;
+        const url = URL.createObjectURL(blob);
+        const a = Object.assign(document.createElement('a'), { href: url, download: name });
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      } catch {
+        toast.error('Export failed. Please try again.');
+      } finally {
+        setBusy(null);
+      }
     });
 
   const renderBullet = (b: { bulletId: string; text: string }, content: ReactNode[]): ReactNode => (
@@ -131,9 +179,10 @@ export function ResumeEditor(props: Props) {
       warnings={warnings[b.bulletId] ?? []}
       fallback={report.fallbackBullets.includes(b.bulletId)}
       onStartEdit={() => setEditing(b.bulletId)}
+      locked={busy !== null}
       onCommit={(text) => {
         setEditing(null);
-        if (text.trim() !== b.text)
+        if (text.replace(/\s+/g, ' ').trim() !== b.text)
           act(b.bulletId, () => editBulletAction(props.resumeId, b.bulletId, text));
       }}
       onCancel={() => setEditing(null)}
@@ -144,7 +193,7 @@ export function ResumeEditor(props: Props) {
           'Rewritten and fact-checked',
         )
       }
-      onSwap={() => openSwap(b.bulletId)}
+      onSwap={() => void openSwap(b.bulletId)}
       onDelete={() => act(b.bulletId, () => deleteBulletAction(props.resumeId, b.bulletId))}
       onSource={() => setSourceFor(b.bulletId)}
       onMove={(dir) => act(b.bulletId, () => moveBulletAction(props.resumeId, b.bulletId, dir))}
@@ -176,39 +225,41 @@ export function ResumeEditor(props: Props) {
           <Button
             size="sm"
             variant="outline"
+            disabled={busy !== null}
             onClick={() =>
-              startTransition(async () => {
-                const res = await markFinalAction(props.resumeId, props.jobId);
-                if (res.ok) {
-                  setStatus('final');
+              void enqueue(async () => {
+                if (!forked.current && (await finalise()))
                   toast.success('Marked as final. Further edits start a new version.');
-                } else toast.error(res.error);
               })
             }
           >
             Mark as final
           </Button>
         )}
-        <a
-          href={`/api/export/${props.resumeId}?format=pdf`}
-          className={buttonVariants({ size: 'sm' })}
-          onClick={() => setStatus('final')}
-        >
+        <Button size="sm" disabled={busy !== null} onClick={() => exportAs('pdf')}>
           <Download /> PDF
-        </a>
-        <a
-          href={`/api/export/${props.resumeId}?format=docx`}
-          className={buttonVariants({ size: 'sm', variant: 'outline' })}
-          onClick={() => setStatus('final')}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy !== null}
+          onClick={() => exportAs('docx')}
         >
           <Download /> DOCX
-        </a>
-        <Link
-          href={`/applications?log=${props.resumeId}`}
-          className={buttonVariants({ size: 'sm', variant: 'ghost' })}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={busy !== null}
+          onClick={() =>
+            void enqueue(async () => {
+              // Logging freezes this version, so pending edits must land first.
+              if (!forked.current) router.push(`/applications?log=${props.resumeId}`);
+            })
+          }
         >
           Log application
-        </Link>
+        </Button>
       </div>
 
       <div className="flex flex-col gap-6 xl:flex-row">
@@ -220,13 +271,19 @@ export function ResumeEditor(props: Props) {
               overflow ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground',
             )}
           >
-            {overflow && <AlertTriangle className="size-3.5" />}≈ {lines} / {LINES_PER_PAGE} lines
+            {overflow && <AlertTriangle className="size-3.5" />}
+            {fill !== null
+              ? `${Math.round(fill * 100)}% of one page`
+              : `≈ ${lines} / ${LINES_PER_PAGE} lines`}
             {overflow
-              ? ' — likely spills onto a second page. Delete or shorten a bullet.'
+              ? ' — spills onto a second page. Delete or shorten a bullet.'
               : ' — fits on one page'}
             {busy === 'page' && <Loader2 className="size-3.5 animate-spin" />}
           </div>
-          <div className="overflow-x-auto rounded-lg border bg-white text-black shadow-sm">
+          <div
+            ref={previewRef}
+            className="overflow-x-auto rounded-lg border bg-white text-black shadow-sm"
+          >
             <ResumeTemplate doc={doc} renderBullet={renderBullet} />
           </div>
           <p className="text-xs text-muted-foreground">
@@ -236,7 +293,19 @@ export function ResumeEditor(props: Props) {
 
         {/* Side panel — 40% */}
         <aside className="flex flex-col gap-4 xl:w-[40%]">
-          <div role="tablist" className="flex gap-1 rounded-lg bg-muted p-1">
+          <div
+            role="tablist"
+            aria-label="Resume details"
+            className="flex gap-1 rounded-lg bg-muted p-1"
+            onKeyDown={(e) => {
+              if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+              const order: Tab[] = ['match', 'recruiter', 'vault'];
+              const next =
+                order[(order.indexOf(tab) + (e.key === 'ArrowRight' ? 1 : 2)) % order.length]!;
+              setTab(next);
+              document.getElementById(`tab-${next}`)?.focus();
+            }}
+          >
             {(
               [
                 ['match', 'Match report'],
@@ -246,8 +315,11 @@ export function ResumeEditor(props: Props) {
             ).map(([t, label]) => (
               <button
                 key={t}
+                id={`tab-${t}`}
                 role="tab"
                 aria-selected={tab === t}
+                aria-controls={`panel-${t}`}
+                tabIndex={tab === t ? 0 : -1}
                 onClick={() => setTab(t)}
                 className={cn(
                   'flex-1 rounded-md px-3 py-1.5 text-sm',
@@ -258,30 +330,32 @@ export function ResumeEditor(props: Props) {
               </button>
             ))}
           </div>
-          {tab === 'match' && (
-            <MatchPanel
-              report={report}
-              onFocus={(id) =>
-                document
-                  .querySelector(`[data-bullet-id="${id}"]`)
-                  ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              }
-            />
-          )}
-          {tab === 'recruiter' && (
-            <RecruiterPanel
-              sim={props.sim}
-              busy={busy !== null}
-              onImprove={() =>
-                act(
-                  null,
-                  () => improveWeakestAction(props.resumeId),
-                  'Weakest line rewritten and fact-checked',
-                )
-              }
-            />
-          )}
-          {tab === 'vault' && <VaultPanel sources={props.sources} doc={doc} />}
+          <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+            {tab === 'match' && (
+              <MatchPanel
+                report={report}
+                onFocus={(id) =>
+                  document
+                    .querySelector(`[data-bullet-id="${id}"]`)
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+              />
+            )}
+            {tab === 'recruiter' && (
+              <RecruiterPanel
+                sim={props.sim}
+                busy={busy !== null}
+                onImprove={() =>
+                  act(
+                    null,
+                    () => improveWeakestAction(props.resumeId),
+                    'Weakest line rewritten and fact-checked',
+                  )
+                }
+              />
+            )}
+            {tab === 'vault' && <VaultPanel sources={props.sources} doc={doc} />}
+          </div>
         </aside>
       </div>
 
@@ -349,6 +423,8 @@ function EditableBullet(p: {
   /** The bullet as the template renders it (with bold emphasis). */
   content: ReactNode[];
   busy: boolean;
+  /** Another action is running: toolbar actions are disabled until it finishes. */
+  locked: boolean;
   editing: boolean;
   warnings: string[];
   fallback: boolean;
@@ -362,51 +438,81 @@ function EditableBullet(p: {
   onMove: (dir: -1 | 1) => void;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  // Escape discards the edit; the blur that follows unmounting must not save it.
+  const cancelled = useRef(false);
   useEffect(() => {
     if (p.editing && ref.current) {
+      cancelled.current = false;
       ref.current.focus();
       ref.current.style.height = `${ref.current.scrollHeight}px`;
     }
   }, [p.editing]);
-
-  if (p.editing) {
-    return (
-      <textarea
-        ref={ref}
-        defaultValue={p.text}
-        aria-label="Edit bullet"
-        className="w-full resize-none rounded border border-blue-400 bg-blue-50/50 p-0.5 font-[inherit] text-[inherit] leading-[inherit] outline-none"
-        onInput={(e) => {
-          e.currentTarget.style.height = 'auto';
-          e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
-        }}
-        onBlur={(e) => p.onCommit(e.currentTarget.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') p.onCancel();
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            e.currentTarget.blur();
-          }
-        }}
-      />
-    );
-  }
 
   const tool = (label: string, icon: ReactNode, onClick: () => void) => (
     <button
       type="button"
       title={label}
       aria-label={label}
+      disabled={p.locked}
       onMouseDown={(e) => e.preventDefault()}
       onClick={(e) => {
         e.stopPropagation();
+        // In edit mode (e.g. on touch screens) save the text first; the queue keeps the order.
+        if (p.editing && ref.current) {
+          cancelled.current = true;
+          p.onCommit(ref.current.value);
+        }
         onClick();
       }}
-      className="rounded p-1 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+      className="rounded p-1 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-40"
     >
       {icon}
     </button>
   );
+  const toolbar = (className: string) => (
+    <span
+      className={cn('items-center gap-0.5 rounded-md border bg-white p-0.5 shadow-sm', className)}
+    >
+      {tool('Regenerate', <RefreshCw className="size-3.5" />, p.onRegenerate)}
+      {tool('Swap', <Replace className="size-3.5" />, p.onSwap)}
+      {tool('Show source', <FileSearch className="size-3.5" />, p.onSource)}
+      {tool('Move up', <ArrowUp className="size-3.5" />, () => p.onMove(-1))}
+      {tool('Move down', <ArrowDown className="size-3.5" />, () => p.onMove(1))}
+      {tool('Delete', <Trash2 className="size-3.5" />, p.onDelete)}
+    </span>
+  );
+
+  if (p.editing) {
+    return (
+      <span className="flex flex-col gap-1">
+        <textarea
+          ref={ref}
+          defaultValue={p.text}
+          maxLength={MAX_BULLET_CHARS}
+          aria-label="Edit bullet"
+          className="w-full resize-none rounded border border-blue-400 bg-blue-50/50 p-0.5 font-[inherit] text-[inherit] leading-[inherit] outline-none"
+          onInput={(e) => {
+            e.currentTarget.style.height = 'auto';
+            e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
+          }}
+          onBlur={(e) => {
+            if (!cancelled.current) p.onCommit(e.currentTarget.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              cancelled.current = true;
+              p.onCancel();
+            }
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              e.currentTarget.blur();
+            }
+          }}
+        />
+        {toolbar('flex self-end')}
+      </span>
+    );
+  }
 
   return (
     <span className="group/bullet relative inline">
@@ -414,7 +520,12 @@ function EditableBullet(p: {
         role="button"
         tabIndex={0}
         onClick={p.onStartEdit}
-        onKeyDown={(e) => e.key === 'Enter' && p.onStartEdit()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            p.onStartEdit();
+          }
+        }}
         className={cn(
           'cursor-text rounded-sm hover:bg-yellow-50',
           p.busy && 'animate-pulse text-neutral-400',
@@ -439,28 +550,61 @@ function EditableBullet(p: {
           <AlertTriangle className="size-3" />
         </span>
       )}
-      <span className="absolute -top-7 right-0 z-10 hidden items-center gap-0.5 rounded-md border bg-white p-0.5 shadow-sm group-hover/bullet:flex group-focus-within/bullet:flex">
-        {tool('Regenerate', <RefreshCw className="size-3.5" />, p.onRegenerate)}
-        {tool('Swap', <Replace className="size-3.5" />, p.onSwap)}
-        {tool('Show source', <FileSearch className="size-3.5" />, p.onSource)}
-        {tool('Move up', <ArrowUp className="size-3.5" />, () => p.onMove(-1))}
-        {tool('Move down', <ArrowDown className="size-3.5" />, () => p.onMove(1))}
-        {tool('Delete', <Trash2 className="size-3.5" />, p.onDelete)}
-      </span>
+      {toolbar(
+        'absolute -top-7 right-0 z-10 hidden group-hover/bullet:flex group-focus-within/bullet:flex',
+      )}
     </span>
   );
 }
 
 function Dot({ score }: { score: number }) {
+  const label = score >= 2 ? 'Covered' : score === 1 ? 'Weak evidence' : 'Gap';
   return (
-    <span
-      className={cn(
-        'mt-1.5 size-2 shrink-0 rounded-full',
-        score >= 2 ? 'bg-emerald-500' : score === 1 ? 'bg-amber-500' : 'bg-rose-500',
-      )}
-      aria-label={score >= 2 ? 'covered' : score === 1 ? 'weak' : 'gap'}
-    />
+    <>
+      <span
+        aria-hidden
+        title={label}
+        className={cn(
+          'mt-1.5 size-2 shrink-0 rounded-full',
+          score >= 2 ? 'bg-emerald-500' : score === 1 ? 'bg-amber-500' : 'bg-rose-500',
+        )}
+      />
+      <span className="sr-only">{label}: </span>
+    </>
   );
+}
+
+/** US Letter at CSS 96 dpi. */
+const PAGE_HEIGHT_PX = 11 * 96;
+
+/**
+ * How full the one-page preview is (1 = exactly one page), measured from the rendered template:
+ * the bottom of the last element plus the page's bottom padding, over the page height.
+ */
+function usePageFill(ref: React.RefObject<HTMLDivElement | null>, doc: ResumeDoc): number | null {
+  const [fill, setFill] = useState<number | null>(null);
+  useEffect(() => {
+    const page = ref.current?.querySelector<HTMLElement>('.rt-page');
+    if (!page) return;
+    const measure = () => {
+      const last = page.lastElementChild as HTMLElement | null;
+      if (!last) return;
+      const style = getComputedStyle(page);
+      const used =
+        last.getBoundingClientRect().bottom -
+        page.getBoundingClientRect().top +
+        parseFloat(style.paddingBottom);
+      // The preview may be scaled to fit; normalise by the page's rendered width (8.5in).
+      const scale = page.getBoundingClientRect().width / (8.5 * 96) || 1;
+      setFill(used / scale / PAGE_HEIGHT_PX);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(page);
+    void document.fonts?.ready.then(measure);
+    return () => ro.disconnect();
+  }, [ref, doc]);
+  return fill;
 }
 
 function MatchPanel({

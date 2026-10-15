@@ -19,6 +19,7 @@ import {
   type Alternative,
   type EditResult,
 } from '@/lib/resume/editor';
+import { MAX_BULLET_CHARS } from '@/lib/resume/limits';
 
 const id = z.uuid();
 
@@ -40,7 +41,7 @@ export async function editBulletAction(resumeId: string, bulletId: string, text:
       u,
       id.parse(resumeId),
       id.parse(bulletId),
-      z.string().max(600).parse(text),
+      z.string().max(MAX_BULLET_CHARS).parse(text),
     );
     // Learn from edits without slowing the editor down (SPEC §9.9: every 5 new edits).
     after(() => maybeDeriveStyleRules(u));

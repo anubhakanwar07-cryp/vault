@@ -100,6 +100,8 @@ export async function createApplication(userId: string, a: NewApplication): Prom
         .where(eq(resumes.id, a.resumeId));
       if (!r) throw new Error('Resume not found');
       jobId = r.jobId;
+      // Freeze the version that was sent: later edits fork a new draft instead of changing it.
+      await tx.update(resumes).set({ status: 'final' }).where(eq(resumes.id, a.resumeId));
       if (jobId && !roleFamily) {
         const [j] = await tx.select({ parsed: jobs.parsed }).from(jobs).where(eq(jobs.id, jobId));
         const p = parsedJD.safeParse(j?.parsed);
