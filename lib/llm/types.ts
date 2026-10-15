@@ -14,6 +14,8 @@ export type CompletionRequest = {
   reasoningEffort?: ReasoningEffort;
   /** Per-request timeout; the SDK retries timed-out requests with backoff. */
   timeoutMs?: number;
+  /** Caller's overall budget; aborting it cancels the request with no retry. */
+  signal?: AbortSignal;
 };
 
 export type CompletionResponse = {

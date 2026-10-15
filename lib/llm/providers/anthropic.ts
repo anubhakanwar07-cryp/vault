@@ -9,17 +9,21 @@ export function createAnthropicProvider(apiKey: string): LLMProvider {
     name: 'anthropic',
     async complete(req: CompletionRequest): Promise<CompletionResponse> {
       const ms = req.timeoutMs ?? 45_000;
-      const res = await withDeadline(ms, (signal) =>
-        client.messages.create(
-          {
-            model: req.model,
-            system: req.system,
-            messages: req.messages,
-            max_tokens: req.maxTokens,
-            temperature: req.temperature,
-          },
-          { timeout: ms, signal },
-        ),
+      const res = await withDeadline(
+        ms,
+        (signal) =>
+          client.messages.create(
+            {
+              model: req.model,
+              system: req.system,
+              messages: req.messages,
+              max_tokens: req.maxTokens,
+              temperature: req.temperature,
+            },
+            { timeout: ms, signal },
+          ),
+        2,
+        req.signal,
       );
       const text = res.content.map((block) => (block.type === 'text' ? block.text : '')).join('');
       return {

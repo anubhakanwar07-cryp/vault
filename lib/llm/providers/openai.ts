@@ -16,24 +16,28 @@ export function createOpenAIProvider(apiKey: string): LLMProvider {
     name: 'openai',
     async complete(req: CompletionRequest): Promise<CompletionResponse> {
       const ms = req.timeoutMs ?? 45_000;
-      const res = await withDeadline(ms, (signal) =>
-        client.chat.completions.create(
-          {
-            model: req.model,
-            messages: [{ role: 'system', content: req.system }, ...req.messages],
-            max_completion_tokens: req.maxTokens,
-            response_format: { type: 'json_object' },
-            ...(isReasoningModel(req.model)
-              ? {
-                  reasoning_effort: req.reasoningEffort ?? 'none',
-                  ...((req.reasoningEffort ?? 'none') === 'none'
-                    ? { temperature: req.temperature }
-                    : {}),
-                }
-              : { temperature: req.temperature }),
-          },
-          { timeout: ms, signal },
-        ),
+      const res = await withDeadline(
+        ms,
+        (signal) =>
+          client.chat.completions.create(
+            {
+              model: req.model,
+              messages: [{ role: 'system', content: req.system }, ...req.messages],
+              max_completion_tokens: req.maxTokens,
+              response_format: { type: 'json_object' },
+              ...(isReasoningModel(req.model)
+                ? {
+                    reasoning_effort: req.reasoningEffort ?? 'none',
+                    ...((req.reasoningEffort ?? 'none') === 'none'
+                      ? { temperature: req.temperature }
+                      : {}),
+                  }
+                : { temperature: req.temperature }),
+            },
+            { timeout: ms, signal },
+          ),
+        2,
+        req.signal,
       );
       return {
         text: res.choices[0]?.message.content ?? '',

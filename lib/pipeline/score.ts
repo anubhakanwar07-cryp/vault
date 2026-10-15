@@ -25,6 +25,7 @@ export async function scoreEvidence(opts: {
   requirements: Requirement[];
   records: AchievementRecord[];
   concurrency?: number;
+  signal?: AbortSignal;
 }): Promise<EvidenceMatrix> {
   const reqs = opts.requirements.map((r) => ({ id: r.id, req: r.req }));
   const validReqs = new Set(reqs.map((r) => r.id));
@@ -36,7 +37,8 @@ export async function scoreEvidence(opts: {
   const matrix: EvidenceMatrix = {};
   for (const r of opts.records) matrix[r.id] = {};
 
-  await Promise.all(
+  // allSettled: when one batch fails, wait for the rest so their LLM costs land before the run closes.
+  const settled = await Promise.allSettled(
     batches.map((batch) =>
       limit(async () => {
         // Short local ids keep the prompt small and stop the model inventing UUIDs.
@@ -64,6 +66,7 @@ export async function scoreEvidence(opts: {
           promptVersion: prompt.version,
           userId: opts.userId,
           pipelineRunId: opts.pipelineRunId,
+          signal: opts.signal,
           maxTokens: 4000,
         });
         for (const s of out.scores) {
@@ -74,5 +77,7 @@ export async function scoreEvidence(opts: {
       }),
     ),
   );
+  const failed = settled.find((s) => s.status === 'rejected');
+  if (failed) throw failed.reason;
   return matrix;
 }

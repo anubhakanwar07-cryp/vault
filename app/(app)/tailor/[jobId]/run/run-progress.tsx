@@ -47,7 +47,14 @@ export function RunProgress({ jobId }: { jobId: string }) {
       }));
       if (e.status !== 'start') setDetail((d) => ({ ...d, [key]: e.message }));
     };
+    // EventSource reconnects by itself; the server then attaches to the run already in progress.
+    // Give up only after a few failed reconnects.
+    let reconnects = 0;
+    es.onopen = () => {
+      reconnects = 0;
+    };
     es.onerror = () => {
+      if (es.readyState === EventSource.CONNECTING && ++reconnects <= 3) return;
       es.close();
       setError(
         (cur) =>

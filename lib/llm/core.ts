@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import { DeadlineExceededError } from './deadline';
 import { extractJson } from './json';
 import type { LlmLogger } from './log';
 import type { ChatMessage, LLMProvider, ReasoningEffort, Tier } from './types';
@@ -21,6 +22,8 @@ export type CallLLMOptions<T> = {
   reasoningEffort?: ReasoningEffort;
   /** Per-request timeout (default 45 s in the providers). */
   timeoutMs?: number;
+  /** Overall budget (e.g. the pipeline run). Once aborted, no further attempts are made. */
+  signal?: AbortSignal;
 };
 
 export type LLMDeps = {
@@ -50,6 +53,7 @@ export async function callLLMWith<T>(deps: LLMDeps, opts: CallLLMOptions<T>): Pr
   let lastError = '';
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (opts.signal?.aborted) throw new DeadlineExceededError(`[${opts.stage}] time budget spent`);
     const started = Date.now();
     const input = { system: opts.system, messages: [...messages] };
     const base = {
@@ -72,6 +76,7 @@ export async function callLLMWith<T>(deps: LLMDeps, opts: CallLLMOptions<T>): Pr
         maxTokens: opts.maxTokens ?? 4096,
         reasoningEffort: opts.reasoningEffort,
         timeoutMs: opts.timeoutMs,
+        signal: opts.signal,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

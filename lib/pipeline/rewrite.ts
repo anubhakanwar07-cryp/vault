@@ -9,6 +9,8 @@ import type { AchievementRecord, EvidenceMatrix, Requirement } from './types';
 export type RewriteContext = {
   userId: string;
   pipelineRunId?: string;
+  /** The run's overall time budget; LLM calls stop once it's spent. */
+  signal?: AbortSignal;
   jd: ParsedJD;
   requirements: Requirement[];
   matrix: EvidenceMatrix;
@@ -128,6 +130,7 @@ export async function rewriteBullet(
     promptVersion: rewritePrompt.version,
     userId: ctx.userId,
     pipelineRunId: ctx.pipelineRunId,
+    signal: ctx.signal,
     maxTokens: 400,
   });
 }

@@ -1,8 +1,8 @@
-import { and, desc, eq, gt, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { NextRequest } from 'next/server';
 import { withUser } from '@/lib/db/client';
 import { pipelineRuns, resumes } from '@/lib/db/schema';
-import { PipelineError, runTailorPipeline } from '@/lib/pipeline/run';
+import { PipelineError, runTailorPipeline, startRun } from '@/lib/pipeline/run';
 import type { ProgressEvent, StageName } from '@/lib/pipeline/types';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -36,41 +36,27 @@ export async function GET(_req: NextRequest, ctx: RouteContext<'/api/tailor/[job
   if (!user) return new Response('Unauthorized', { status: 401 });
   if (!UUID.test(jobId)) return new Response('Not found', { status: 404 });
 
-  const [active] = await withUser(user.id, (tx) =>
-    tx
-      .select({ id: pipelineRuns.id })
-      .from(pipelineRuns)
-      .where(
-        and(
-          eq(pipelineRuns.jobId, jobId),
-          eq(pipelineRuns.status, 'running'),
-          gt(pipelineRuns.createdAt, new Date(Date.now() - 2 * 60_000)),
-        ),
-      )
-      .orderBy(desc(pipelineRuns.createdAt))
-      .limit(1),
-  );
-  const [{ n } = { n: 0 }] = await withUser(user.id, (tx) =>
-    tx
-      .select({ n: sql<number>`count(*)::int` })
-      .from(pipelineRuns)
-      .where(gt(pipelineRuns.createdAt, new Date(Date.now() - 24 * 3600_000))),
-  );
+  // Claimed atomically before streaming, so concurrent requests can't double-run or race the limit.
+  const claim = await startRun(user.id, jobId, DAILY_RUN_LIMIT);
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
       let open = true;
       // The pipeline must finish even if the browser goes away, so sending never throws.
-      const send = (e: ProgressEvent) => {
+      const write = (chunk: string) => {
         if (!open) return;
         try {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(e)}\n\n`));
+          controller.enqueue(encoder.encode(chunk));
         } catch {
           open = false;
         }
       };
+      const send = (e: ProgressEvent) => write(`data: ${JSON.stringify(e)}\n\n`);
+      // Comment lines keep proxies from closing a quiet stream during long stages.
+      const ping = setInterval(() => write(': ping\n\n'), 15_000);
       const close = () => {
+        clearInterval(ping);
         if (!open) return;
         open = false;
         try {
@@ -80,20 +66,23 @@ export async function GET(_req: NextRequest, ctx: RouteContext<'/api/tailor/[job
         }
       };
 
-      if (active) {
-        await followExistingRun(user.id, active.id, send);
-        return close();
-      }
-      if (n >= DAILY_RUN_LIMIT) {
-        send({
-          stage: 'done',
-          status: 'error',
-          message: `You’ve tailored ${DAILY_RUN_LIMIT} resumes in the last 24 hours — that’s the daily limit. Try again tomorrow.`,
-        });
-        return close();
-      }
       try {
-        await runTailorPipeline({ userId: user.id, jobId, onEvent: send });
+        if (claim.kind === 'follow') {
+          await followExistingRun(user.id, claim.pipelineRunId, send);
+        } else if (claim.kind === 'limit') {
+          send({
+            stage: 'done',
+            status: 'error',
+            message: `You’ve tailored ${DAILY_RUN_LIMIT} resumes in the last 24 hours — that’s the daily limit. Try again tomorrow.`,
+          });
+        } else {
+          await runTailorPipeline({
+            userId: user.id,
+            jobId,
+            pipelineRunId: claim.pipelineRunId,
+            onEvent: send,
+          });
+        }
       } catch (err) {
         console.error('[tailor] pipeline failed', err);
         send({
@@ -115,14 +104,16 @@ export async function GET(_req: NextRequest, ctx: RouteContext<'/api/tailor/[job
       'content-type': 'text/event-stream',
       'cache-control': 'no-cache, no-transform',
       connection: 'keep-alive',
+      'x-accel-buffering': 'no',
     },
   });
 }
 
-/** Polls an in-progress run and relays its stage, then its result. */
+/** Polls an in-progress run and relays its stages, then its result. Stays under maxDuration. */
 async function followExistingRun(userId: string, runId: string, send: (e: ProgressEvent) => void) {
+  const until = Date.now() + (maxDuration - 15) * 1000;
   let lastStage = '';
-  for (let i = 0; i < 75; i++) {
+  while (Date.now() < until) {
     const [run] = await withUser(userId, (tx) =>
       tx
         .select({ status: pipelineRuns.status, stage: pipelineRuns.stage })
@@ -131,6 +122,8 @@ async function followExistingRun(userId: string, runId: string, send: (e: Progre
     );
     if (!run) break;
     if (run.stage && run.stage !== lastStage && run.status === 'running') {
+      // Close out the stage we reported before, so earlier steps don't keep spinning.
+      if (lastStage) send({ stage: lastStage as StageName, status: 'done', message: 'Done' });
       lastStage = run.stage;
       send({
         stage: run.stage as StageName,

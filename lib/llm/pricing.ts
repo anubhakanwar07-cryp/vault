@@ -5,8 +5,16 @@ const PRICES: { prefix: string; input: number; output: number }[] = [
   { prefix: 'gpt-5.4', input: 2.5, output: 15 },
 ];
 
+const warned = new Set<string>();
+
 export function costUsd(model: string, inputTokens: number, outputTokens: number): number {
   const p = PRICES.find((x) => model.startsWith(x.prefix));
-  if (!p) return 0;
+  if (!p) {
+    if (model && !warned.has(model)) {
+      warned.add(model);
+      console.warn(`[pricing] no price for model "${model}"; its cost is recorded as $0`);
+    }
+    return 0;
+  }
   return (inputTokens * p.input + outputTokens * p.output) / 1_000_000;
 }

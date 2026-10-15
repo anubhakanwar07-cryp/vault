@@ -16,7 +16,7 @@ export const NO_VERDICT = 'The fact-checker returned no verdict for this line.';
 export const CHECK_UNAVAILABLE = 'Fact-check unavailable.';
 
 async function verifyBatch(
-  ctx: Pick<RewriteContext, 'userId' | 'pipelineRunId'>,
+  ctx: Pick<RewriteContext, 'userId' | 'pipelineRunId' | 'signal'>,
   lines: LineToCheck[],
 ): Promise<{ failures: Record<string, string[]>; missing: LineToCheck[] }> {
   const out = await callLLM({
@@ -37,6 +37,7 @@ async function verifyBatch(
     promptVersion: prompt.version,
     userId: ctx.userId,
     pipelineRunId: ctx.pipelineRunId,
+    signal: ctx.signal,
     maxTokens: 4000,
   });
   const failures: Record<string, string[]> = {};
@@ -59,7 +60,7 @@ async function verifyBatch(
  * A batch whose call fails is retried once; if it fails again its lines fail with CHECK_UNAVAILABLE.
  */
 export async function verifyClaimsLLM(
-  ctx: Pick<RewriteContext, 'userId' | 'pipelineRunId'>,
+  ctx: Pick<RewriteContext, 'userId' | 'pipelineRunId' | 'signal'>,
   lines: LineToCheck[],
 ): Promise<Record<string, string[]>> {
   const failures: Record<string, string[]> = {};
@@ -115,12 +116,17 @@ export async function rewriteAndVerifyBullets(opts: {
   extra?: Record<string, { avoidVerbs?: string[]; critique?: string }>;
   /** Tier for rewrites. 'fast' suits light edits such as swapping the lead verb. */
   tier?: 'fast' | 'strong';
+  /** Epoch ms after which no retry round starts; remaining failures take the fallback. */
+  retryUntil?: number;
 }): Promise<Record<string, BulletOutcome>> {
   const limit = pLimit(opts.concurrency ?? 5);
   const outcomes: Record<string, BulletOutcome> = {};
   let pending = opts.records.map((r) => ({ record: r, reasons: [] as string[] }));
 
   for (let attempt = 0; attempt <= MAX_VERIFY_RETRIES && pending.length > 0; attempt++) {
+    // Budget guard: retries are the expensive tail of a run, so stop them once time is short.
+    if (attempt > 0 && opts.retryUntil && Date.now() > opts.retryUntil) break;
+    if (opts.ctx.signal?.aborted) break;
     // 1) Rewrite everything pending, in parallel.
     const drafts = await Promise.all(
       pending.map(({ record, reasons }) =>
