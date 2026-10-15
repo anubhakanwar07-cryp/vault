@@ -9,8 +9,11 @@ const esc = (s: string) =>
 /** Full standalone HTML for the resume — the same template as the preview (SPEC §11). */
 export function resumeHtml(doc: ResumeDoc): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(doc.header.name)}</title>
-<style>@page { size: Letter; margin: 0 } html, body { margin: 0; background: #fff }
-${RESUME_CSS}</style></head><body>${resumeBodyHtml(doc)}</body></html>`;
+<style>${RESUME_CSS}
+/* Margins live on the page box so a second page gets them too; the preview's padding is dropped. */
+@page { size: Letter; margin: 0.5in 0.6in }
+html, body { margin: 0; background: #fff }
+.rt-page { padding: 0; width: auto; min-height: 0 }</style></head><body>${resumeBodyHtml(doc)}</body></html>`;
 }
 
 /** Real, selectable-text PDF via headless Chrome. */

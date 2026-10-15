@@ -7,9 +7,19 @@ export const MAX_BOLD_SPANS = 3;
 
 export type Segment = { text: string; bold: boolean };
 
-/** "60%", "90%+", "3.4x", "+480", "~40%", "1.4M", "2,000+" — numbers with a unit or sign, not bare counts. */
-const METRIC =
-  /(?<![\p{L}\p{N}])(?:[+~]\d[\d,]*(?:\.\d+)?(?:%\+?|[xX](?![\p{L}])|[KMB](?![\p{L}]))?|\d[\d,]*(?:\.\d+)?(?:%\+?|[xX](?![\p{L}])|[KMB](?![\p{L}])\+?|\+))/gu;
+// Metrics: numbers with a unit, a sign or a currency — not bare counts. Ranges ("20–30%") stay whole.
+const NUM = String.raw`\d[\d,]*(?:\.\d+)?`;
+const RANGE = String.raw`${NUM}(?:\s?[-–]\s?${NUM})?`;
+const END = String.raw`(?![\p{L}\p{N}])`;
+const UNIT = String.raw`(?:%\+?|[xX×]${END}|(?:[kK]|[MB]|bn|mn|Cr|L)${END}\+?|\+)`;
+const SIGN = String.raw`[+~≈]\s?`;
+const CURRENCY = String.raw`[$€£₹]\s?`;
+
+/** "60%", "90%+", "3.4x", "+480", "~40%", "1.4M", "50k", "$1.2M", "₹3Cr", "20–30%", "2,000+". */
+const METRIC = new RegExp(
+  String.raw`(?<![\p{L}\p{N}.$€£₹+~≈])(?:${SIGN}(?:${CURRENCY})?${RANGE}${UNIT}?|${CURRENCY}${RANGE}${UNIT}?|${RANGE}${UNIT})`,
+  'gu',
+);
 
 type Span = { start: number; end: number };
 

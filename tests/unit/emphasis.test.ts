@@ -15,6 +15,14 @@ describe('emphasize', () => {
     expect(bold('Reviewed 3 drafts with 12 writers')).toEqual([]);
   });
 
+  it('handles currency, lowercase k, bn and ranges, and skips partial tokens', () => {
+    expect(bold('Raised $1.2M and saved ₹3Cr')).toEqual(['$1.2M', '₹3Cr']);
+    expect(bold('Reached 50k users and 3.2bn events')).toEqual(['50k', '3.2bn']);
+    expect(bold('Lifted conversion 20-30% in a quarter')).toEqual(['20-30%']);
+    expect(bold('Built a 2x2 prioritisation matrix')).toEqual([]);
+    expect(bold('Cut 3-day turnaround')).toEqual([]);
+  });
+
   it('bolds JD terms the text already contains, whole words only', () => {
     expect(bold('Shipped an LLM QC engine', ['LLM', 'SQL'])).toEqual(['LLM']);
     expect(bold('Moved data to NoSQL', ['SQL'])).toEqual([]);

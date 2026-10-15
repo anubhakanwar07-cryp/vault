@@ -25,10 +25,10 @@ const join = (parts: (string | null | undefined)[], sep = ' | ') => parts.filter
 type Run = TextRun | ExternalHyperlink;
 const run = (text: string, o: { bold?: boolean; italics?: boolean; size?: number } = {}) =>
   new TextRun({ text, font: FONT, size: o.size ?? SIZE, bold: o.bold, italics: o.italics });
-const link = (text: string, url: string, size = SIZE) =>
+const link = (text: string, url: string, size = SIZE, bold = false) =>
   new ExternalHyperlink({
     link: safeHref(url),
-    children: [new TextRun({ text, font: FONT, size, color: LINK, underline: {} })],
+    children: [new TextRun({ text, font: FONT, size, bold, color: LINK, underline: {} })],
   });
 
 const heading = (text: string) =>
@@ -74,7 +74,7 @@ export async function renderDocx(doc: ResumeDoc): Promise<Buffer> {
   const children: Paragraph[] = [
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [run(h.name.toUpperCase(), { bold: true, size: 40 })],
+      children: [run((h.name || 'Your name').toUpperCase(), { bold: true, size: 40 })],
     }),
     new Paragraph({ alignment: AlignmentType.CENTER, children: contact }),
   ];
@@ -115,7 +115,7 @@ export async function renderDocx(doc: ResumeDoc): Promise<Buffer> {
     for (const p of doc.projects) {
       children.push(
         headRow(
-          [p.url ? link(p.name, p.url) : run(p.name, { bold: true })],
+          [p.url ? link(p.name, p.url, SIZE, true) : run(p.name, { bold: true })],
           dateRange(p.start, p.end),
         ),
       );
