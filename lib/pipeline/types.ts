@@ -56,6 +56,10 @@ export function requirementsOf(jd: ParsedJD): Requirement[] {
 export type Score = 0 | 1 | 2 | 3;
 export type EvidenceMatrix = Record<string, Record<string, { score: Score; reason: string }>>;
 
+/** Stage 4a: how relevant each project is for the JD as a whole (keyed by project id). */
+export type ProjectScore = { score: number; requirementsProven: string[]; reason: string };
+export type ProjectScores = Record<string, ProjectScore>;
+
 export type SelectedProject = { projectId: string; achievementIds: string[] };
 export type Selection = {
   roles: { roleId: string; projects: SelectedProject[]; gapFill?: boolean }[];
@@ -64,11 +68,14 @@ export type Selection = {
   gaps: string[];
   /** marginal value at pick time — used for ordering and the swap UI */
   pickValue: Record<string, number>;
+  /** The chosen projects, best first (Stage A). */
+  rankedProjects: string[];
 };
 
 export type StageName =
   | 'parse_jd'
   | 'retrieve'
+  | 'score_projects'
   | 'score'
   | 'select'
   | 'rewrite'

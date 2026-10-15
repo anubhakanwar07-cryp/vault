@@ -55,7 +55,9 @@ This covers the 20 golden JDs against a fixture vault of 52 achievements. Full r
 | Selection recall                       | ≥ 60%   | 63%               |
 | Selection precision                    | ≥ 70%   | 54% ❌ (see note) |
 
-Precision and recall are measured against "ideal" picks that were hand-labelled without independent review. The resume picks about 12 bullets when the ideals list about 10, so precision is capped at roughly 80% even with perfect agreement. Replaying stored scores (`pnpm tune:select`) showed that stricter selection raises precision only a few points while pushing recall below target. Have a human review `evals/golden/*.json`, then re-run `pnpm eval`.
+Precision and recall are measured against "ideal" picks that were hand-labelled without independent review. Since Phase 9 a resume shows only 3 projects and 8 bullets, so achievement-level recall against the older ideal lists is capped too; project precision and project group recall are the better selection signals. Have a human review `evals/golden/*.json`, then re-run `pnpm eval`.
+
+**Why a project was or wasn't picked:** `pnpm debug:select <jobId> [--all]` lists every project in that job owner's vault with its achievement count, average completeness, project score and reason, plus the 3 that selection picks. `--all` repeats it for each of their jobs. It makes one fast-tier LLM call per job. A project with 0 or very few achievements can't be picked well; that's an import problem, so add its work in the vault.
 
 **Reliability:** every LLM request has a hard 45 s deadline (120 s for imports) with one retry, and every database transaction has a 60 s deadline. A stalled network call therefore fails fast instead of hanging a run.
 

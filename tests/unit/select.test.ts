@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { metricBonus, ONE_PAGE, recencyFactor, select, selectedIds } from '@/lib/pipeline/select';
-import type { AchievementRecord, EvidenceMatrix, Requirement } from '@/lib/pipeline/types';
+import { fitToOnePage, nextBulletToDrop } from '@/lib/pipeline/fit';
+import {
+  BULLETS_BY_RANK,
+  MAX_PROJECTS,
+  metricBonus,
+  rankProjects,
+  recencyFactor,
+  select,
+  selectedIds,
+} from '@/lib/pipeline/select';
+import type {
+  AchievementRecord,
+  EvidenceMatrix,
+  ProjectScores,
+  Requirement,
+} from '@/lib/pipeline/types';
 
 const today = new Date('2026-01-01');
 
@@ -76,161 +90,283 @@ describe('recencyFactor / metricBonus', () => {
   });
 });
 
-describe('select', () => {
-  it('is deterministic regardless of input order', () => {
-    const records = ['a', 'b', 'c', 'd', 'e'].map((id, i) => rec(id, { project: `P${i % 2}` }));
-    const m = matrix([
-      ['a', 'm1', 3],
-      ['b', 'm2', 2],
-      ['c', 'm1', 2],
-      ['d', 'n1', 3],
-      ['e', 'm2', 3],
-    ]);
-    const one = select({ requirements: M, matrix: m, records, today });
-    const two = select({
-      requirements: [...M].reverse(),
-      matrix: m,
-      records: [...records].reverse(),
-      today,
-    });
-    expect(two).toEqual(one);
-  });
+const ps = (entries: [string, number, string[]?][]): ProjectScores =>
+  Object.fromEntries(
+    entries.map(([id, score, proven]) => [
+      id,
+      { score, requirementsProven: proven ?? [], reason: '' },
+    ]),
+  );
 
-  it('respects every structural cap', () => {
-    const records: AchievementRecord[] = [];
-    const entries: [string, string, number][] = [];
-    for (let r = 0; r < 6; r++)
-      for (let p = 0; p < 3; p++)
-        for (let k = 0; k < 6; k++) {
-          const id = `r${r}p${p}a${k}`;
-          records.push(
-            rec(id, {
-              role: `R${r}`,
-              roleStart: `20${10 + r}-01-01`,
-              roleEnd: r === 5 ? null : `20${11 + r}-01-01`,
-              project: `R${r}P${p}`,
-            }),
-          );
-          entries.push([id, k % 2 ? 'm1' : 'm2', 1 + ((r + p + k) % 3)], [id, 'n1', 1]);
-        }
-    const sel = select({ requirements: M, matrix: matrix(entries), records, today });
-    const ids = selectedIds(sel);
-    expect(ids.length).toBeLessThanOrEqual(ONE_PAGE.maxBullets);
-    expect(sel.roles.filter((r) => !r.gapFill).length).toBeLessThanOrEqual(
-      ONE_PAGE.maxRolesWithBullets,
-    );
-    for (const r of sel.roles) {
-      expect(r.projects.length).toBeLessThanOrEqual(ONE_PAGE.maxProjectsPerRole);
-      expect(r.projects.reduce((n, p) => n + p.achievementIds.length, 0)).toBeGreaterThanOrEqual(1);
-      for (const p of r.projects)
-        expect(p.achievementIds.length).toBeLessThanOrEqual(ONE_PAGE.maxBulletsPerProject);
-    }
-    expect(new Set(ids).size).toBe(ids.length);
-  });
+/** n achievements in project `pid`, each proving a different requirement at score 3. */
+function project(pid: string, n: number, o: { role?: string | null } = {}) {
+  const reqs = ['m1', 'm2', 'n1', 'm1', 'm2'];
+  const records = Array.from({ length: n }, (_, i) =>
+    rec(`${pid}-${i}`, { project: pid, role: o.role, tags: [`${pid}-${i}`] }),
+  );
+  const entries = records.map(
+    (r, i) => [r.id, reqs[i % reqs.length]!, 3] as [string, string, number],
+  );
+  return { records, entries };
+}
 
-  it('prioritises must-have coverage over nice-to-have', () => {
-    const records = [rec('must'), rec('nice')];
-    const m = matrix([
-      ['must', 'm1', 2],
-      ['nice', 'n1', 3],
+const projectsOnPage = (s: ReturnType<typeof select>) => [
+  ...s.roles.flatMap((r) => r.projects),
+  ...s.sideProjects,
+];
+
+describe('rankProjects (Stage A)', () => {
+  it('takes the top MAX_PROJECTS by project score', () => {
+    const scores = ps([
+      ['A', 9],
+      ['B', 2],
+      ['C', 7],
+      ['D', 8],
+      ['E', 5],
     ]);
-    const sel = select({
+    expect(rankProjects(scores, M, ['A', 'B', 'C', 'D', 'E'])).toEqual(['A', 'D', 'C']);
+    expect(MAX_PROJECTS).toBe(3);
+  });
+  it('breaks ties toward a project proving a must-have nobody chosen proves yet', () => {
+    const scores = ps([
+      ['A', 8, ['m1']],
+      ['B', 6, ['m1']],
+      ['C', 6, ['m2']],
+    ]);
+    expect(rankProjects(scores, M, ['A', 'B', 'C'], 2)).toEqual(['A', 'C']);
+  });
+  it('only considers eligible projects and is order-independent', () => {
+    const scores = ps([
+      ['A', 9],
+      ['B', 8],
+      ['C', 7],
+    ]);
+    expect(rankProjects(scores, M, ['C', 'B'])).toEqual(['B', 'C']);
+  });
+});
+
+describe('select (Stage B)', () => {
+  it('shows exactly 3 projects with a 3/3/2 bullet budget', () => {
+    const parts = ['P1', 'P2', 'P3', 'P4', 'P5'].map((p) => project(p, 5));
+    const s = select({
       requirements: M,
-      matrix: m,
-      records,
+      matrix: matrix(parts.flatMap((p) => p.entries)),
+      records: parts.flatMap((p) => p.records),
+      projectScores: ps([
+        ['P1', 9],
+        ['P2', 8],
+        ['P3', 7],
+        ['P4', 6],
+        ['P5', 5],
+      ]),
       today,
-      budget: { ...ONE_PAGE, maxBullets: 1 },
     });
-    expect(selectedIds(sel)).toEqual(['must']);
+    expect(s.rankedProjects).toEqual(['P1', 'P2', 'P3']);
+    expect(projectsOnPage(s)).toHaveLength(3);
+    const counts = s.rankedProjects.map(
+      (pid) => projectsOnPage(s).find((p) => p.projectId === pid)!.achievementIds.length,
+    );
+    expect(counts).toEqual([...BULLETS_BY_RANK]);
+    expect(selectedIds(s)).toHaveLength(8);
   });
 
-  it('redundancy penalty prevents two near-identical bullets', () => {
-    const shared = ['sql', 'a/b testing', 'growth'];
-    const records = [
-      rec('a', { tags: shared, project: 'P1' }),
-      rec('a-twin', { tags: shared, project: 'P1' }),
-      rec('b', { tags: ['figma', 'research'], project: 'P1' }),
-    ];
-    const m = matrix([
-      ['a', 'm1', 3],
-      ['a-twin', 'm1', 3],
-      ['a-twin', 'n1', 1],
-      ['b', 'n1', 1],
-    ]);
-    const ids = selectedIds(select({ requirements: M, matrix: m, records, today }));
-    expect(ids.filter((id) => id.startsWith('a')).length).toBe(1);
-    // A different bullet covering the leftover requirement is still preferred over the twin.
-    const m2 = matrix([
-      ['a', 'm1', 3],
-      ['a-twin', 'm1', 3],
-      ['a-twin', 'n1', 2],
-      ['b', 'n1', 3],
-    ]);
-    const ids2 = selectedIds(select({ requirements: M, matrix: m2, records, today }));
-    expect(ids2.filter((id) => id.startsWith('a')).length).toBe(1);
-    expect(ids2).toContain('b');
+  it('lets work and side projects compete for the same slots', () => {
+    const work = project('W', 3);
+    const side = project('S', 3, { role: null });
+    const other = project('O', 3);
+    const s = select({
+      requirements: M,
+      matrix: matrix([...work.entries, ...side.entries, ...other.entries]),
+      records: [...work.records, ...side.records, ...other.records],
+      projectScores: ps([
+        ['S', 9],
+        ['W', 4],
+        ['O', 7],
+      ]),
+      today,
+    });
+    expect(s.rankedProjects).toEqual(['S', 'O', 'W']);
+    expect(s.sideProjects.map((p) => p.projectId)).toEqual(['S']);
+    expect(s.sideProjects[0]!.achievementIds).toHaveLength(3);
   });
 
-  it('shows recent roles with no picks (no unexplained gap) but not old ones', () => {
-    const records = [
-      rec('cur', { role: 'R-cur', roleStart: '2024-01-01', roleEnd: null }),
-      rec('recent-weak', { role: 'R-recent', roleStart: '2022-01-01', roleEnd: '2023-12-01' }),
-      rec('old-weak', { role: 'R-old', roleStart: '2015-01-01', roleEnd: '2018-01-01' }),
-    ];
-    const m = matrix([['cur', 'm1', 3]]);
-    const sel = select({ requirements: M, matrix: m, records, today });
-    expect(sel.roles.map((r) => r.roleId)).toEqual(['R-cur', 'R-recent']);
-    expect(sel.roles[1]).toMatchObject({ gapFill: true });
-    expect(sel.roles[1]!.projects[0]!.achievementIds).toEqual(['recent-weak']);
+  it('a project matching only on a tool name loses to one matching on function', () => {
+    // "TOOL" achievements score high per requirement (they literally say SQL), but the project-level
+    // judgement says it only shares a tool name; "FUNC" proves the job's purpose.
+    const tool = project('TOOL', 3);
+    const func = project('FUNC', 3);
+    const s = select({
+      requirements: M,
+      matrix: matrix([
+        ...tool.entries,
+        ...func.entries.map(([a, r]) => [a, r, 2] as [string, string, number]),
+      ]),
+      records: [...tool.records, ...func.records],
+      projectScores: ps([
+        ['TOOL', 3],
+        ['FUNC', 8],
+      ]),
+      today,
+    });
+    expect(s.rankedProjects[0]).toBe('FUNC');
   });
 
-  it('orders roles reverse-chronologically and strongest bullets first', () => {
-    const records = [
-      rec('old1', { role: 'R-old', roleStart: '2020-01-01', roleEnd: '2023-06-01' }),
-      rec('new-strong', { role: 'R-new', roleStart: '2023-07-01' }),
-      rec('new-weak', { role: 'R-new', roleStart: '2023-07-01' }),
-    ];
-    const m = matrix([
-      ['old1', 'm2', 3],
-      ['new-strong', 'm1', 3],
-      ['new-weak', 'n1', 2],
-    ]);
-    const sel = select({ requirements: M, matrix: m, records, today });
-    expect(sel.roles.map((r) => r.roleId)).toEqual(['R-new', 'R-old']);
-    expect(sel.roles[0]!.projects[0]!.achievementIds).toEqual(['new-strong', 'new-weak']);
-  });
-
-  it('reports coverage and must-have gaps', () => {
-    const sel = select({
+  it('gives each bullet in a project a different requirement when alternatives exist', () => {
+    // a, b, c all best prove m1; d proves m2, e proves n1 — so the project shows a, d, e.
+    const records = ['a', 'b', 'c', 'd', 'e'].map((id) => rec(id, { project: 'P', tags: [id] }));
+    const s = select({
       requirements: M,
       matrix: matrix([
         ['a', 'm1', 3],
-        ['a', 'm2', 1],
+        ['b', 'm1', 3],
+        ['c', 'm1', 3],
+        ['d', 'm2', 2],
+        ['e', 'n1', 2],
       ]),
-      records: [rec('a')],
+      records,
+      projectScores: ps([['P', 9]]),
       today,
     });
-    expect(sel.coverage.m1).toEqual({ bestScore: 3, achievementId: 'a' });
-    expect(sel.gaps).toEqual(['m2']);
+    expect(projectsOnPage(s)[0]!.achievementIds.sort()).toEqual(['a', 'd', 'e']);
   });
 
-  it('only includes side projects that clear the value threshold', () => {
+  it('repeats a requirement only when nothing else in the project scores ≥ 2', () => {
+    const records = ['a', 'b', 'c'].map((id) => rec(id, { project: 'P', tags: [id] }));
+    const s = select({
+      requirements: M,
+      matrix: matrix([
+        ['a', 'm1', 3],
+        ['b', 'm1', 2],
+        ['c', 'm2', 1],
+      ]),
+      records,
+      projectScores: ps([['P', 9]]),
+      today,
+    });
+    expect(projectsOnPage(s)[0]!.achievementIds).toEqual(['a', 'b', 'c']);
+  });
+
+  it('never shows two near-identical bullets', () => {
     const records = [
-      rec('w1', { project: 'W' }),
-      rec('w2', { project: 'W' }),
-      rec('side-weak', { role: null, project: 'S1' }),
-      rec('side-strong', { role: null, project: 'S2' }),
+      rec('a', { project: 'P', tags: ['x', 'y'] }),
+      rec('b', { project: 'P', tags: ['x', 'y'] }),
+      rec('c', { project: 'P', tags: ['z'] }),
     ];
-    const m = matrix([
-      ['w1', 'm1', 3],
-      ['w2', 'm2', 3],
-      ['side-weak', 'n1', 1],
-      ['side-strong', 'm1', 3],
-      ['side-strong', 'n1', 3],
-    ]);
-    const sel = select({ requirements: M, matrix: m, records, today });
-    const side = sel.sideProjects.flatMap((p) => p.achievementIds);
-    expect(side).toContain('side-strong');
-    expect(side).not.toContain('side-weak');
+    const s = select({
+      requirements: M,
+      matrix: matrix([
+        ['a', 'm1', 3],
+        ['b', 'm2', 3],
+        ['c', 'n1', 2],
+      ]),
+      records,
+      projectScores: ps([['P', 9]]),
+      today,
+    });
+    const ids = projectsOnPage(s)[0]!.achievementIds;
+    expect(ids).toContain('c');
+    expect(ids.filter((id) => id === 'a' || id === 'b')).toHaveLength(1);
+  });
+
+  it('shows at least one bullet for a chosen project even with weak evidence', () => {
+    const records = [rec('a', { project: 'P' }), rec('b', { project: 'Q' })];
+    const s = select({
+      requirements: M,
+      matrix: matrix([['a', 'm1', 3]]),
+      records,
+      projectScores: ps([
+        ['P', 9],
+        ['Q', 4],
+      ]),
+      today,
+    });
+    expect(projectsOnPage(s).map((p) => p.achievementIds)).toEqual([['a'], ['b']]);
+  });
+
+  it('is deterministic regardless of input order', () => {
+    const parts = ['P1', 'P2', 'P3', 'P4'].map((p) => project(p, 4));
+    const input = {
+      requirements: M,
+      matrix: matrix(parts.flatMap((p) => p.entries)),
+      records: parts.flatMap((p) => p.records),
+      projectScores: ps([
+        ['P1', 6],
+        ['P2', 6],
+        ['P3', 6],
+        ['P4', 6],
+      ]),
+      today,
+    };
+    const a = select(input);
+    const b = select({
+      ...input,
+      records: [...input.records].reverse(),
+      requirements: [...M].reverse(),
+    });
+    expect(b).toEqual(a);
+  });
+
+  it('keeps recent roles without a chosen project on the timeline, without adding a 4th project', () => {
+    const p = project('P', 3, { role: 'R1' });
+    const old = {
+      id: 'R0',
+      title: 'Analyst',
+      company: 'Old',
+      location: null,
+      startDate: '2021-01-01',
+      endDate: '2024-06-01',
+    };
+    const ancient = { ...old, id: 'RX', startDate: '2015-01-01', endDate: '2018-01-01' };
+    const s = select({
+      requirements: M,
+      matrix: matrix(p.entries),
+      records: p.records,
+      projectScores: ps([['P', 9]]),
+      roles: [old, ancient],
+      today,
+    });
+    expect(s.roles.map((r) => r.roleId)).toEqual(['R1', 'R0']);
+    expect(s.roles[1]).toEqual({ roleId: 'R0', projects: [], gapFill: true });
+    expect(projectsOnPage(s)).toHaveLength(1);
+  });
+});
+
+describe('one-page fit', () => {
+  const plan = [
+    ['a1', 'a2', 'a3'],
+    ['b1', 'b2', 'b3'],
+    ['c1', 'c2'],
+  ];
+  it('drops from project #3, then #2, then #1, never below one bullet each', () => {
+    const order: string[] = [];
+    const dropped = new Set<string>();
+    for (let next = nextBulletToDrop(plan, dropped); next; next = nextBulletToDrop(plan, dropped)) {
+      order.push(next);
+      dropped.add(next);
+    }
+    expect(order).toEqual(['c2', 'b3', 'b2', 'a3', 'a2']);
+  });
+  it('stops as soon as the page fits', async () => {
+    const res = await fitToOnePage(
+      plan.flat(),
+      plan,
+      async (doc) => doc.length <= 6,
+      (doc, id) => doc.filter((x) => x !== id),
+    );
+    expect(res).toEqual({
+      doc: ['a1', 'a2', 'a3', 'b1', 'b2', 'c1'],
+      dropped: ['c2', 'b3'],
+      fits: true,
+    });
+  });
+  it('reports when one bullet per project still overflows', async () => {
+    const res = await fitToOnePage(
+      plan.flat(),
+      plan,
+      async () => false,
+      (d, id) => d.filter((x) => x !== id),
+    );
+    expect(res.fits).toBe(false);
+    expect(res.doc).toEqual(['a1', 'b1', 'c1']);
   });
 });

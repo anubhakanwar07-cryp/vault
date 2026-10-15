@@ -387,8 +387,8 @@ Orchestrated by `lib/pipeline/run.ts`. Progress streamed to the client over SSE 
 JD text/URL
   → 1 parseJD (fast)                → ParsedJD
   → 2 user confirms/edits ParsedJD  (UI step, pipeline pauses)
-  → 3 retrieve (embeddings)         → top 25 achievements
-  → 4 score (fast, batched)         → EvidenceMatrix
+  → 3 score_projects (fast)         → every project scored 0–10 for the JD; top 3 kept   [Phase 9]
+  → 4 score (fast, batched)         → EvidenceMatrix over the top 3 projects' achievements
   → 5 select (pure TS)              → Selection
   → 6 rewrite (strong, parallel)    → bullets + headline + summary + skills order
   → 7 verify (fast) + recruiterSim (strong)  → loop failed bullets back to 6, max 2 retries
@@ -430,6 +430,20 @@ Show editable: role title, role family (dropdown), seniority (dropdown), company
 
 ### 7.4 Stage 3 — Retrieve
 
+> **Replaced in Phase 9 by project scoring (§7.4a).** Embedding retrieval no longer feeds the pipeline:
+> a top-25 cut could drop a whole relevant project before it was ever judged.
+
+### 7.4a Stage 3 — Score projects (Phase 9)
+
+**Product rule (hard): every tailored resume is one page and shows only the top 3 most relevant projects
+for the JD.** Work projects and side projects compete for the same 3 slots.
+
+- Prompt `lib/llm/prompts/scoreProjects.ts`, fast tier, temperature 0, logged to `llm_runs` as stage `score_projects`.
+- Input: role title, core problems, every must-have and nice-to-have, and each project as a whole (name, one-liner, ownership, role context, all its achievements).
+- Output per project: `{ project_id, score 0–10, requirements_proven: [req_id], reason (<20 words) }`.
+- Rules: judge what the work *functionally* proves for the job, not word overlap (an AI sales-roleplay tool built for sales reps proves "partner with sales" even without those words); functional fit must follow from what the project actually did; a project that only shares a tool/tech name with the JD scores ≤ 3.
+- The achievements of the top 3 projects (Stage A below) are the candidates for §7.5 scoring.
+
 - Build a query string: `role_title + core_problems + must_have reqs + top 10 keywords`.
 - Embed it; cosine search over the user's non-archived achievements; take top 25.
 - Always also include the user's 3 most recent achievements and any achievement whose `skills/tools` exactly match a must-have keyword (dedupe). Cap at 35.
@@ -442,39 +456,36 @@ Show editable: role title, role family (dropdown), seniority (dropdown), company
 
 ### 7.6 Stage 5 — Select (pure TypeScript, `lib/pipeline/select.ts`)
 
-Deterministic and unit-tested. No LLM.
+Deterministic and unit-tested. No LLM. Reworked in Phase 9 (the old bullet-by-bullet greedy with
+per-role caps locked the same projects into every resume).
 
 ```
-Inputs: ParsedJD, EvidenceMatrix, achievements (with role/project), profile.page_limit, style_rules
-Budget: page_limit=1 → max 15 bullets total, max 3 roles shown with bullets,
-        max 2 projects per role, max 4 bullets per project, min 1 bullet per shown role.
+value(a) = Σ_req weight(req) × score(a, req) × recencyFactor(a) × metricBonus(a)   // as before
 
-For each achievement a:
-  value(a) = Σ_req weight(req) × score(a, req)       // must-have weights 1–5, nice-to-have 1–3
-           × recencyFactor(a)                          // 1.0 current role, 0.9 within 2 yrs, 0.75 older
-           × (metric_confidence !== 'none' ? 1.15 : 1.0)
+Stage A — projects:
+  rank projects by score_projects score; take the top MAX_PROJECTS = 3.
+  tie-break: the project proving a must-have no already-chosen project proves; then id.
 
-Greedy loop until budget is full or no candidate adds value:
-  pick a maximising marginalValue(a) where
-    marginalValue(a) = Σ_req weight(req) × max(0, score(a,req) − bestCoveredSoFar(req)) × recency × metricBonus
-                       − 0.3 × redundancyPenalty(a)   // overlap of skills/tags with already-picked bullets
-  respect structural caps; skip if it breaks a cap
+Stage B — bullets, inside the 3 chosen projects only:
+  budget by rank: 3 / 3 / 2 (BULLETS_BY_RANK, 8 total)
+  repeat: pick the bullet with the highest value × (1 − 0.3 × redundancy), where
+    - its best requirement is not yet covered by a bullet from the same project and it scores ≥ 2,
+      unless no such bullet exists in the project (then repeats are allowed)
+    - near-duplicates (tag Jaccard ≥ 0.8 with any picked bullet) are never picked
+  every chosen project shows at least 1 bullet.
 
-Then:
-  - ensure every role with a pick is shown in reverse-chronological order
-  - roles with zero picks but within the last 3 years are shown with title/dates and 1 best bullet
-    (no unexplained gaps in the timeline)
-  - order bullets within a project by marginal value at pick time (strongest first)
-  - order projects within a role by total value
-
-Outputs Selection:
-  { roles: [{roleId, projects: [{projectId, achievementIds[]}]}],
-    sideProjects: [...same shape, max 2, only if value > threshold],
-    coverage: Record<reqId, {bestScore, achievementId|null}>,
-    gaps: reqId[] }   // must-haves with bestScore < 2
+Page structure: work projects under their role (roles reverse-chronological, projects by rank);
+side projects follow by rank. A role from the last 3 years with no chosen project is shown with
+title and dates only (it would otherwise add a 4th project).
 ```
 
-Unit tests: deterministic output for fixture; caps respected; must-have coverage prioritised over nice-to-have; redundancy penalty prevents two near-identical bullets; timeline has no unexplained gap.
+Unit tests: exactly 3 projects; 3/3/2 budget; a tool-name-only project loses to a functional match;
+no two bullets in a project cover the same requirement when alternatives exist; determinism;
+near-duplicates; timeline roles.
+
+**One-page guarantee (Stage 8):** after assembly the resume is laid out with the PDF's HTML in headless
+Chrome. While it overflows one page, drop the lowest-value bullet from project #3, then #2, then #1,
+never below 1 bullet per chosen project (`lib/pipeline/fit.ts`, `lib/export/page-fit.ts`).
 
 ### 7.7 Stage 6 — Rewrite
 
@@ -800,6 +811,9 @@ layout of the owner's own resume (`Anubha_Kanwar_Resume.pdf`) — every tailored
 | Must-have keyword recall | expected keywords found in parsed must-haves/keywords | ≥ 80% |
 | Selection precision | |picked ∩ ideal| / |picked| | ≥ 70% |
 | Selection recall | |picked ∩ ideal| / |ideal| | ≥ 60% |
+| Project precision (Phase 9) | shown projects containing ≥ 1 ideal achievement / shown projects | ≥ 80% |
+| Project group recall (Phase 9) | `ideal_project_groups` satisfied (golden JDs that define them) | ≥ 67% |
+| Forbidden project hits (Phase 9) | shown projects listed in `forbidden_project_keys` | 0 |
 | Fabrication | bullets failing code-level verify in final output | 0 |
 | Weighted must-have coverage | from MatchReport | ≥ 80% |
 | Banned-phrase hits | count | 0 |
@@ -840,6 +854,10 @@ Applications tracker, log-from-editor, baseline logging, dashboard callback stat
 ### Phase 7 — Evals + admin + polish
 Eval harness and reports, `/admin/runs` with per-run stage timeline and every LLM input/output, empty states, loading states, error states, rate limiting (max 30 tailor runs/user/day), README with setup steps.
 **Accept:** `pnpm eval` runs end-to-end on all 20 golden JDs and writes a report; fabrication = 0; admin page restricted to `ADMIN_EMAILS`; Playwright e2e covers: sign in → import resume → paste JD → confirm → tailor → edit a bullet → export PDF → log application.
+
+### Phase 9 — Top-3 project selection
+Project-level scoring stage (`score_projects`), two-stage select (top 3 projects, 3/3/2 bullets, a different requirement per bullet), one-page guarantee, `pnpm debug:select <jobId> [--all]` diagnostics, two golden JDs with project expectations, project metrics in the eval report.
+**Accept:** select unit tests above pass; every eval resume shows ≤ 3 projects and fits one page; the growth golden never picks the job-search side project; typecheck, lint and unit tests pass; before/after eval numbers reported.
 
 ### Phase 8 — Your-format template
 Rebuild the single template (§11) to match the owner's uploaded resume: centred header with labelled links, Education first, no summary, `Project — one-liner` sub-heads under roles, dated side projects, Technical/Product skill lines, awards with descriptions, render-time bold for metrics + JD keywords, US Letter. Same layout in preview, PDF and DOCX. Drop headline/summary generation from the pipeline. Older stored resumes still render.

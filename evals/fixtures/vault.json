@@ -509,6 +509,257 @@
        "rawNotes": null
       }
      ]
+    },
+    {
+     "key": "p13",
+     "name": "Content Studio",
+     "oneLiner": "0→1 generative AI pipeline that drafts, checks and exports course content",
+     "ownership": "I owned the product; built with 3 engineers and the content QC team",
+     "proofUrl": null,
+     "start": "2025-01-01",
+     "end": null,
+     "achievements": [
+      {
+       "key": "a53",
+       "situation": null,
+       "action": "Replaced 5 disconnected content tools with one generative AI pipeline from outline to export, shaped by interviews with writers and QC reviewers",
+       "result": "Became the single workflow for all new course content",
+       "metricValue": null,
+       "metricConfidence": "none",
+       "skills": [
+        "LLM product design",
+        "user research"
+       ],
+       "tools": [
+        "GPT-4"
+       ],
+       "functionTags": [
+        "ai-ml",
+        "zero-to-one"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [
+        "owned product end to end"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a54",
+       "situation": null,
+       "action": "Designed an LLM quality-check engine that flags factual, grammar and image errors and routes each to the right reviewer, with human accept/reject before publishing",
+       "result": "Cut manual QA effort while keeping a 90% quality score across 44 projects",
+       "metricValue": "60%",
+       "metricConfidence": "exact",
+       "skills": [
+        "LLM evals",
+        "human-in-the-loop design"
+       ],
+       "tools": [
+        "GPT-4"
+       ],
+       "functionTags": [
+        "ai-ml"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a55",
+       "situation": null,
+       "action": "Wrote the evaluation rubric and a labelled set of 200 flagged errors to measure the QC engine's precision before each prompt change",
+       "result": "Caught two prompt regressions before release",
+       "metricValue": "200 labelled errors",
+       "metricConfidence": "exact",
+       "skills": [
+        "LLM evals",
+        "prompt design"
+       ],
+       "tools": [
+        "Python"
+       ],
+       "functionTags": [
+        "ai-ml"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    },
+    {
+     "key": "p14",
+     "name": "Ask Data",
+     "oneLiner": "LLM natural-language-to-SQL assistant for sales and ops teams",
+     "ownership": "I owned the product and the prompt layer; 2 engineers built the backend",
+     "proofUrl": null,
+     "start": "2025-04-01",
+     "end": null,
+     "achievements": [
+      {
+       "key": "a56",
+       "situation": null,
+       "action": "Launched a natural-language-to-SQL assistant for the sales and ops teams, restricted to 7 approved views to prevent hallucinated queries",
+       "result": "Turned a 3-day analyst queue into instant answers",
+       "metricValue": "3 days to instant",
+       "metricConfidence": "exact",
+       "skills": [
+        "LLM product design",
+        "prompt design"
+       ],
+       "tools": [
+        "GPT-4",
+        "SQL",
+        "BigQuery"
+       ],
+       "functionTags": [
+        "ai-ml",
+        "data"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a57",
+       "situation": null,
+       "action": "Clustered thousands of sales call transcripts by objection theme to show the sales team which pitches converted",
+       "result": "Sales leads adopted two new talk tracks from the findings",
+       "metricValue": "thousands of transcripts",
+       "metricConfidence": "estimate",
+       "skills": [
+        "clustering",
+        "sales enablement insights"
+       ],
+       "tools": [
+        "Python",
+        "SQL"
+       ],
+       "functionTags": [
+        "data",
+        "gtm"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a58",
+       "situation": null,
+       "action": "Piloted the assistant in one centre with sales managers before scaling it",
+       "result": "Rolled out to 25 centres",
+       "metricValue": "25 centres",
+       "metricConfidence": "exact",
+       "skills": [
+        "rollout planning",
+        "stakeholder management"
+       ],
+       "tools": [],
+       "functionTags": [
+        "ops"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
+    },
+    {
+     "key": "p15",
+     "name": "Enrollment funnel RCA",
+     "oneLiner": "Root-cause analysis of a 24% enrollment decline across 1.4M leads",
+     "ownership": "I led the analysis and presented to the founders and sales leadership",
+     "proofUrl": null,
+     "start": "2025-08-01",
+     "end": "2025-10-01",
+     "achievements": [
+      {
+       "key": "a59",
+       "situation": null,
+       "action": "Traced a 24% enrollment decline to three low-quality affiliate partners and a budget cut to the best-converting channel, across 1.4M leads",
+       "result": "Leadership paused the three partners",
+       "metricValue": "24%",
+       "metricConfidence": "exact",
+       "skills": [
+        "funnel analytics",
+        "root-cause analysis"
+       ],
+       "tools": [
+        "SQL",
+        "BigQuery"
+       ],
+       "functionTags": [
+        "growth",
+        "data"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      },
+      {
+       "key": "a60",
+       "situation": null,
+       "action": "Built the business case for a GTM recovery plan, sizing the upside from conversion rates already proven that year",
+       "result": "Projected 480 extra enrollments a year; approved by the founders",
+       "metricValue": "480 enrollments/year",
+       "metricConfidence": "estimate",
+       "skills": [
+        "business cases",
+        "GTM strategy"
+       ],
+       "tools": [
+        "Google Sheets"
+       ],
+       "functionTags": [
+        "growth",
+        "gtm"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [
+        "presented to founder"
+       ],
+       "rawNotes": null
+      },
+      {
+       "key": "a61",
+       "situation": null,
+       "action": "Partnered with the sales head to test call timing and found leads called within 24 hours convert at 3.4 times the rate of later calls",
+       "result": "The finding became the sales team's call-back SLA",
+       "metricValue": "3.4x",
+       "metricConfidence": "exact",
+       "skills": [
+        "sales partnership",
+        "conversion analysis"
+       ],
+       "tools": [
+        "SQL"
+       ],
+       "functionTags": [
+        "growth"
+       ],
+       "domainTags": [
+        "edtech"
+       ],
+       "senioritySignals": [],
+       "rawNotes": null
+      }
+     ]
     }
    ]
   },
@@ -1454,6 +1705,239 @@
      ],
      "domainTags": [
       "b2c"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    }
+   ]
+  },
+  {
+   "key": "p16",
+   "name": "PitchPal",
+   "oneLiner": "AI sales-roleplay coach where reps practise pitches against simulated prospects",
+   "ownership": "Solo side project; piloted with a partner sales team",
+   "proofUrl": "https://pitchpal.example",
+   "start": "2025-11-01",
+   "end": "2026-02-01",
+   "achievements": [
+    {
+     "key": "a62",
+     "situation": null,
+     "action": "Built an AI roleplay coach that lets sales reps practise pitches against simulated prospects and get a scorecard on objection handling",
+     "result": "Piloted with a sales team of 12 reps",
+     "metricValue": "12 reps",
+     "metricConfidence": "exact",
+     "skills": [
+      "LLM product design",
+      "sales enablement"
+     ],
+     "tools": [
+      "GPT-4o"
+     ],
+     "functionTags": [
+      "ai-ml",
+      "zero-to-one",
+      "gtm"
+     ],
+     "domainTags": [
+      "sales-tech"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    },
+    {
+     "key": "a63",
+     "situation": null,
+     "action": "Ran weekly feedback sessions with the sales manager to tune the prospect personas and scoring rubric",
+     "result": "Reps' average rubric score rose over the pilot",
+     "metricValue": null,
+     "metricConfidence": "none",
+     "skills": [
+      "user research",
+      "prompt design"
+     ],
+     "tools": [
+      "GPT-4o"
+     ],
+     "functionTags": [
+      "ai-ml",
+      "research"
+     ],
+     "domainTags": [
+      "sales-tech"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    }
+   ]
+  },
+  {
+   "key": "p17",
+   "name": "Vox Tutor",
+   "oneLiner": "Voice AI tutor for spoken-English practice",
+   "ownership": "Solo side project",
+   "proofUrl": "https://voxtutor.example",
+   "start": "2025-06-01",
+   "end": "2025-09-01",
+   "achievements": [
+    {
+     "key": "a64",
+     "situation": null,
+     "action": "Built a voice AI tutor that holds spoken-English conversations and corrects pronunciation in real time",
+     "result": "Tested with 40 learners over four weeks",
+     "metricValue": "40 learners",
+     "metricConfidence": "exact",
+     "skills": [
+      "conversational AI",
+      "LLM product design"
+     ],
+     "tools": [
+      "GPT-4o",
+      "Whisper"
+     ],
+     "functionTags": [
+      "ai-ml",
+      "zero-to-one"
+     ],
+     "domainTags": [
+      "edtech"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    },
+    {
+     "key": "a65",
+     "situation": null,
+     "action": "Designed an evaluation set of 100 recorded learner turns to compare correction quality across prompt versions",
+     "result": "Picked the prompt with the fewest wrong corrections",
+     "metricValue": "100 turns",
+     "metricConfidence": "exact",
+     "skills": [
+      "LLM evals"
+     ],
+     "tools": [
+      "Python"
+     ],
+     "functionTags": [
+      "ai-ml"
+     ],
+     "domainTags": [
+      "edtech"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    }
+   ]
+  },
+  {
+   "key": "p18",
+   "name": "VR Anatomy Lab",
+   "oneLiner": "VR app that teaches anatomy through interactive 3D dissection",
+   "ownership": "Built with 2 classmates; I led research and the launch plan",
+   "proofUrl": null,
+   "start": "2024-01-01",
+   "end": "2024-06-01",
+   "achievements": [
+    {
+     "key": "a66",
+     "situation": null,
+     "action": "Ran market research with 30 medical students and 4 faculty to size demand for VR anatomy teaching",
+     "result": "Identified first-year students as the launch segment",
+     "metricValue": "30 students",
+     "metricConfidence": "exact",
+     "skills": [
+      "market research",
+      "user research"
+     ],
+     "tools": [],
+     "functionTags": [
+      "research",
+      "gtm"
+     ],
+     "domainTags": [
+      "edtech"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    },
+    {
+     "key": "a67",
+     "situation": null,
+     "action": "Wrote the business case and launch plan for a pilot with a partner college, including pricing and a sales pitch for faculty",
+     "result": "The college ran a one-semester pilot",
+     "metricValue": null,
+     "metricConfidence": "none",
+     "skills": [
+      "business cases",
+      "GTM strategy"
+     ],
+     "tools": [
+      "Unity"
+     ],
+     "functionTags": [
+      "gtm",
+      "zero-to-one"
+     ],
+     "domainTags": [
+      "edtech"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    }
+   ]
+  },
+  {
+   "key": "p19",
+   "name": "JobPilot",
+   "oneLiner": "AI job-search platform combining outreach, tracking and a ranked job feed",
+   "ownership": "Solo side project",
+   "proofUrl": "https://jobpilot.example",
+   "start": "2026-05-01",
+   "end": "2026-06-01",
+   "achievements": [
+    {
+     "key": "a68",
+     "situation": null,
+     "action": "Built a job-search platform that drafts cold outreach emails with GPT-4o, tracks applications on a Kanban board and sends follow-up reminders",
+     "result": "Used daily for my own job search",
+     "metricValue": null,
+     "metricConfidence": "none",
+     "skills": [
+      "full-stack product building"
+     ],
+     "tools": [
+      "GPT-4o",
+      "Next.js",
+      "Supabase"
+     ],
+     "functionTags": [
+      "zero-to-one"
+     ],
+     "domainTags": [
+      "hr-tech"
+     ],
+     "senioritySignals": [],
+     "rawNotes": null
+    },
+    {
+     "key": "a69",
+     "situation": null,
+     "action": "Ranked a multi-source job feed with a 100-point relevance score using SQL views over scraped listings",
+     "result": null,
+     "metricValue": "100-point score",
+     "metricConfidence": "exact",
+     "skills": [
+      "ranking"
+     ],
+     "tools": [
+      "SQL",
+      "Supabase"
+     ],
+     "functionTags": [
+      "data"
+     ],
+     "domainTags": [
+      "hr-tech"
      ],
      "senioritySignals": [],
      "rawNotes": null

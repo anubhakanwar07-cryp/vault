@@ -9,7 +9,7 @@ import type { ProgressEvent, StageName } from '@/lib/pipeline/types';
 import { cn } from '@/lib/utils';
 
 const STEPS: { stage: StageName; label: string }[] = [
-  { stage: 'retrieve', label: 'Matching your work…' },
+  { stage: 'score_projects', label: 'Choosing your most relevant projects…' },
   { stage: 'score', label: 'Weighing your evidence against each requirement…' },
   { stage: 'rewrite', label: 'Writing bullets…' },
   { stage: 'verify', label: 'Fact-checking every line against your vault…' },

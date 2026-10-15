@@ -12,21 +12,26 @@ import {
   pipelineRuns,
   resumeBullets,
   resumes,
+  roles as rolesT,
   styleRules,
 } from '@/lib/db/schema';
+import { openPageMeasurer } from '@/lib/export/page-fit';
 import { callLLM } from '@/lib/llm/client';
 import { DeadlineExceededError } from '@/lib/llm/deadline';
 import { costUsd } from '@/lib/llm/pricing';
 import * as simPrompt from '@/lib/llm/prompts/recruiterSim';
 import { recruiterSimOutput, type RecruiterSim } from '@/lib/llm/schemas/pipeline';
 import { resumeToText } from '@/lib/resume/plain-text';
+import { removeBullet } from '@/lib/resume/doc-ops';
 import type { MatchReport, ResumeDoc } from '@/lib/resume/types';
 import { knockoutWarnings } from '@/lib/vault/experience';
 import { buildMatchReport, groupSkills, pickExtras } from './assemble-utils';
-import { retrieve } from './retrieve';
+import { fitToOnePage } from './fit';
+import { loadAllRecords } from './records';
 import type { RewriteContext } from './rewrite';
 import { scoreEvidence } from './score';
-import { baseValue, select, selectedIds } from './select';
+import { byProject, scoreProjects } from './score-projects';
+import { baseValue, rankProjects, select, selectedIds } from './select';
 import { requirementsOf, type ProgressEvent } from './types';
 import { rewriteAndVerifyBullets, type RewriteHooks } from './verify';
 import { leadVerb, type VerifyContext } from './verify-code';
@@ -96,7 +101,7 @@ export async function startRun(
     if (n >= dailyLimit) return { kind: 'limit' };
     const [run] = await tx
       .insert(pipelineRuns)
-      .values({ userId, jobId, status: 'running', stage: 'retrieve' })
+      .values({ userId, jobId, status: 'running', stage: 'score_projects' })
       .returning({ id: pipelineRuns.id });
     return { kind: 'started', pipelineRunId: run!.id };
   });
@@ -128,7 +133,7 @@ export async function runTailorPipeline(opts: {
       await withUser(userId, (tx) =>
         tx
           .insert(pipelineRuns)
-          .values({ userId, jobId, status: 'running', stage: 'retrieve' })
+          .values({ userId, jobId, status: 'running', stage: 'score_projects' })
           .returning({ id: pipelineRuns.id }),
       )
     )[0]!.id;
@@ -146,19 +151,37 @@ export async function runTailorPipeline(opts: {
     const jd = job.parsed;
     const requirements = requirementsOf(jd);
 
-    // ---- Stage 3: retrieve
-    emit({ stage: 'retrieve', status: 'start', message: 'Matching your work…' });
-    const candidates = await retrieve(userId, jd);
-    if (candidates.length === 0) {
+    // ---- Stage 3 (reworked): score every project in the vault for this JD, keep the top ones.
+    // SPEC-QUESTION: replaces §7.4 embedding retrieval. Candidates are now every achievement in the
+    // MAX_PROJECTS best projects, so a relevant project is never lost to a top-25 cut.
+    const [vault, vaultRoles] = await Promise.all([
+      withUser(userId, (tx) => loadAllRecords(tx)),
+      withUser(userId, (tx) => tx.select().from(rolesT)),
+    ]);
+    if (vault.length === 0) {
       throw new PipelineError(
         'empty vault',
         'Your vault has no achievements yet. Add some work first.',
       );
     }
     emit({
-      stage: 'retrieve',
+      stage: 'score_projects',
+      status: 'start',
+      message: 'Choosing your most relevant projects…',
+    });
+    const projectScores = await scoreProjects({
+      userId,
+      pipelineRunId,
+      jd,
+      records: vault,
+      signal: budget,
+    });
+    const topProjects = new Set(rankProjects(projectScores, requirements, byProject(vault).keys()));
+    const candidates = vault.filter((r) => r.project && topProjects.has(r.project.id));
+    emit({
+      stage: 'score_projects',
       status: 'done',
-      message: `Found ${candidates.length} relevant achievements`,
+      message: `Picked ${topProjects.size} projects out of ${byProject(vault).size}`,
     });
 
     // ---- Stage 4: score
@@ -180,7 +203,20 @@ export async function runTailorPipeline(opts: {
     // ---- Stage 5: select
     await setStage('select');
     const profile = await getProfile(userId);
-    const selection = select({ requirements, matrix, records: candidates });
+    const selection = select({
+      requirements,
+      matrix,
+      records: candidates,
+      projectScores,
+      roles: vaultRoles.map((r) => ({
+        id: r.id,
+        title: r.title,
+        company: r.company,
+        location: r.location,
+        startDate: r.startDate,
+        endDate: r.endDate,
+      })),
+    });
     const byId = new Map(candidates.map((c) => [c.id, c]));
     const chosen = selectedIds(selection).map((id) => byId.get(id)!);
     if (chosen.length === 0) {
@@ -245,7 +281,7 @@ export async function runTailorPipeline(opts: {
     emit({ stage: 'verify', status: 'start', message: 'Fact-checking…' });
 
     // ---- Verb rule (SPEC §8.10): each lead verb at most twice; regenerate later bullets.
-    const order = selectedIds(selection);
+    let order = selectedIds(selection);
     const countVerbs = (skip?: string) => {
       const counts = new Map<string, number>();
       for (const id of order) {
@@ -308,7 +344,7 @@ export async function runTailorPipeline(opts: {
       jd.keywords,
       jd.role_family,
     );
-    const doc: ResumeDoc = {
+    let doc: ResumeDoc = {
       header: {
         name: profile?.fullName ?? '',
         email: profile?.email ?? null,
@@ -319,7 +355,7 @@ export async function runTailorPipeline(opts: {
       headline: '',
       summary: '',
       experience: selection.roles.map((r) => {
-        const role = chosen.find((c) => c.role?.id === r.roleId)!.role!;
+        const role = vaultRoles.find((v) => v.id === r.roleId)!;
         // Projects render as "Name — one-liner" sub-heads (SPEC §11). Only a lone project with no
         // one-liner puts its bullets directly under the role.
         const grouped =
@@ -331,6 +367,7 @@ export async function runTailorPipeline(opts: {
           location: role.location,
           start: role.startDate,
           end: role.endDate,
+          // A gap-fill role (recent, but no chosen project) shows title and dates only.
           bullets: grouped ? [] : r.projects.flatMap((p) => p.achievementIds.map(bulletFor)),
           ...(grouped
             ? {
@@ -375,6 +412,26 @@ export async function runTailorPipeline(opts: {
         description: x.description,
       })),
     };
+
+    // ---- One-page guarantee: drop the weakest bullets of project #3, then #2, until it fits.
+    const plan = selection.rankedProjects.map((pid) =>
+      [...selection.roles.flatMap((r) => r.projects), ...selection.sideProjects]
+        .find((p) => p.projectId === pid)!
+        .achievementIds.map((id) => bulletIdByAchievement[id]!),
+    );
+    const measurer = await openPageMeasurer();
+    let fitted: Awaited<ReturnType<typeof fitToOnePage<ResumeDoc>>>;
+    try {
+      fitted = await fitToOnePage(doc, plan, measurer.fits, removeBullet);
+    } finally {
+      await measurer.close();
+    }
+    if (!fitted.fits) console.warn('[pipeline] resume still over one page at 1 bullet per project');
+    doc = fitted.doc;
+    if (fitted.dropped.length) {
+      const droppedIds = new Set(fitted.dropped);
+      order = order.filter((id) => !droppedIds.has(bulletIdByAchievement[id]!));
+    }
 
     const fallbackBullets = order
       .filter((id) => outcomes[id]!.fallback)

@@ -1,0 +1,8 @@
+{
+  "name": "ai-pm-genai-workflows",
+  "jd_file": "evals/jds/ai-pm-genai-workflows.txt",
+  "expected_role_family": "ai_pm",
+  "expected_must_have_keywords": ["LLM", "evaluation", "prompt"],
+  "ideal_achievement_ids": ["a53", "a54", "a55", "a56", "a58", "a62", "a63", "a64", "a65"],
+  "ideal_project_groups": [["p13"], ["p14"], ["p16", "p17"]]
+}

@@ -165,7 +165,14 @@ function refreshReport(
   const next = buildMatchReport({
     jd: l.jd,
     requirements,
-    selection: { roles: [], sideProjects: [], coverage, gaps: [], pickValue: {} },
+    selection: {
+      roles: [],
+      sideProjects: [],
+      coverage,
+      gaps: [],
+      pickValue: {},
+      rankedProjects: [],
+    },
     bulletIdByAchievement,
     lines,
     knockoutWarnings: l.report.knockoutWarnings,

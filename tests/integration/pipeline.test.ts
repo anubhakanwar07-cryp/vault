@@ -55,7 +55,7 @@ describe('tailoring pipeline (Phase 4 acceptance)', () => {
     expect(result.costUsd).toBeLessThan(0.1);
     expect(events.map((e) => e.stage)).toEqual(
       expect.arrayContaining([
-        'retrieve',
+        'score_projects',
         'score',
         'select',
         'rewrite',
@@ -72,8 +72,14 @@ describe('tailoring pipeline (Phase 4 acceptance)', () => {
       .from(resumeBullets)
       .where(eq(resumeBullets.resumeId, result.resumeId));
 
+    // Product rule: only the top 3 projects, at most 3/3/2 bullets.
+    const shown = [...doc.experience.flatMap((e) => e.projects ?? []), ...doc.projects];
+    const roleLevel = doc.experience.filter((e) => e.bullets.length > 0).length;
+    expect(shown.length + roleLevel).toBeLessThanOrEqual(3);
+    expect(bullets.length).toBeLessThanOrEqual(8);
+
     // Every bullet traces to a vault achievement.
-    expect(bullets.length).toBeGreaterThanOrEqual(6);
+    expect(bullets.length).toBeGreaterThanOrEqual(3);
     expect(bullets.every((b) => b.achievementId)).toBe(true);
     expect(
       allBullets(doc)

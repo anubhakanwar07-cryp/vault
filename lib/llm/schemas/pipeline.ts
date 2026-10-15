@@ -2,6 +2,21 @@ import { z } from 'zod';
 
 export const rewriteOutput = z.object({ bullet: z.string().trim().min(10) });
 
+export const scoreProjectsOutput = z.object({
+  projects: z.array(
+    z.object({
+      project_id: z.string(),
+      score: z.coerce
+        .number()
+        .catch(0)
+        .transform((n) => Math.min(10, Math.max(0, Math.round(n)))),
+      requirements_proven: z.array(z.string()).default([]),
+      reason: z.string().trim().default(''),
+    }),
+  ),
+});
+export type ScoreProjectsOutput = z.output<typeof scoreProjectsOutput>;
+
 export const verifyOutput = z.object({
   results: z.array(
     z.object({

@@ -1,0 +1,21 @@
+Product Manager, Generative AI — Learning Platforms
+
+We are a Series B learning company putting generative AI into the hands of our content, sales and learner teams. You will own AI products end to end, from discovery to launch.
+
+What you'll do
+- Ship LLM-powered workflows that replace manual content production, with human review where quality matters.
+- Define how we evaluate AI output quality: rubrics, labelled sets and regression checks before every prompt change.
+- Turn natural-language questions from business teams into trustworthy answers from our data, with guardrails against hallucination.
+- Prototype conversational and voice AI experiences and test them with real users.
+
+What we're looking for
+- 1–3 years of product experience shipping AI/LLM features to real users
+- Hands-on prompt engineering and LLM prototyping
+- Experience designing evaluations for AI output quality
+- Human-in-the-loop product design
+- Comfort working with engineers on data and SQL
+
+Nice to have
+- Conversational or voice AI
+- Edtech experience
+- Python

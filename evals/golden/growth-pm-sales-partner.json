@@ -1,0 +1,9 @@
+{
+  "name": "growth-pm-sales-partner",
+  "jd_file": "evals/jds/growth-pm-sales-partner.txt",
+  "expected_role_family": "growth",
+  "expected_must_have_keywords": ["funnel", "SQL", "sales"],
+  "ideal_achievement_ids": ["a59", "a60", "a61", "a62", "a63", "a57", "a66", "a67"],
+  "ideal_project_groups": [["p15"], ["p16"], ["p14", "p18"]],
+  "forbidden_project_keys": ["p19"]
+}

@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, type SQL } from 'drizzle-orm';
 import type { Tx } from '@/lib/db/client';
 import { achievements, projects, roles } from '@/lib/db/schema';
 import type { AchievementRecord } from './types';
@@ -7,12 +7,22 @@ import type { AchievementRecord } from './types';
 /** Loads full AchievementRecords (achievement + project + role) for the given ids, inside an RLS transaction. */
 export async function loadRecords(tx: Tx, ids: string[]): Promise<AchievementRecord[]> {
   if (ids.length === 0) return [];
+  return query(tx, inArray(achievements.id, ids));
+}
+
+/** Every non-archived achievement in the user's vault, with its project and role. */
+export function loadAllRecords(tx: Tx): Promise<AchievementRecord[]> {
+  return query(tx);
+}
+
+async function query(tx: Tx, where?: SQL): Promise<AchievementRecord[]> {
   const rows = await tx
     .select({ a: achievements, p: projects, r: roles })
     .from(achievements)
     .leftJoin(projects, eq(projects.id, achievements.projectId))
     .leftJoin(roles, eq(roles.id, achievements.roleId))
-    .where(and(inArray(achievements.id, ids), eq(achievements.isArchived, false)));
+    .where(and(where, eq(achievements.isArchived, false)))
+    .orderBy(achievements.id);
   return rows.map(({ a, p, r }) => ({
     id: a.id,
     situation: a.situation,

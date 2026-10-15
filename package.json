@@ -18,7 +18,7 @@
     "cost:last": "tsx --tsconfig tsconfig.json scripts/run-cost.ts",
     "eval": "tsx --conditions=react-server --tsconfig tsconfig.json evals/run.ts",
     "test:e2e": "playwright test",
-    "tune:select": "tsx --conditions=react-server --tsconfig tsconfig.json scripts/tune-select.ts"
+    "debug:select": "tsx --conditions=react-server --tsconfig tsconfig.json scripts/debug-select.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
