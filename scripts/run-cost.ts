@@ -7,6 +7,14 @@ config({ path: '.env.local', quiet: true });
 
 async function main() {
   const pg = postgres(process.env.DATABASE_URL!, { prepare: false, max: 1 });
+  try {
+    await report(pg);
+  } finally {
+    await pg.end();
+  }
+}
+
+async function report(pg: postgres.Sql) {
   const [run] =
     await pg`select id, duration_ms from pipeline_runs order by created_at desc limit 1`;
   if (!run) return console.log('No pipeline runs yet.');
@@ -23,6 +31,9 @@ async function main() {
     );
   }
   console.log(`total $${total.toFixed(4)} | duration ${run.duration_ms} ms`);
-  await pg.end();
 }
-main();
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

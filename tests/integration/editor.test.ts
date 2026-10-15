@@ -30,6 +30,10 @@ beforeAll(async () => {
   resumeId = (await runTailorPipeline({ userId, jobId })).resumeId;
 }, 300_000);
 
+/** Swaps the lead verb for one the bullet doesn't already start with, so the edit is never a no-op. */
+const reverb = (text: string, verb: string, alt: string) =>
+  text.replace(/^\w+/, new RegExp(`^${verb}\\b`).test(text) ? alt : verb);
+
 // PDF text breaks lines at hyphens ("in-\nhouse"); rejoin those before comparing.
 const norm = (s: string) =>
   s.replace(/[‐-―]/g, '-').replace(/-\s+/g, '-').replace(/\s+/g, ' ').trim();
@@ -40,7 +44,7 @@ describe('editor (Phase 5 acceptance)', () => {
     const target = bulletIds(before)[0]!;
     const original = findBullet(before, target)!.text;
 
-    const edited = original.replace(/^\w+/, 'Shipped');
+    const edited = reverb(original, 'Shipped', 'Delivered');
     const res = await editBullet(userId, resumeId, target, edited);
     expect(res.resumeId).toBe(resumeId);
     expect(findBullet(res.doc, target)?.text).toBe(edited);
@@ -98,6 +102,18 @@ describe('editor (Phase 5 acceptance)', () => {
     expect(swaps).toHaveLength(1);
   }, 120_000);
 
+  it('concurrent edits on different bullets both persist', async () => {
+    const doc = (await getResume(userId, resumeId))!.content;
+    const [a, b] = bulletIds(doc).slice(3, 5) as [string, string];
+    const ta = reverb(findBullet(doc, a)!.text, 'Built', 'Created');
+    const tb = reverb(findBullet(doc, b)!.text, 'Ran', 'Owned');
+    await Promise.all([editBullet(userId, resumeId, a, ta), editBullet(userId, resumeId, b, tb)]);
+    const after = (await getResume(userId, resumeId))!.content;
+    expect(findBullet(after, a)?.text).toBe(ta);
+    expect(findBullet(after, b)?.text).toBe(tb);
+  }, 120_000);
+
+  // Runs last: it marks the shared resume final.
   it('editing a final version forks a new draft version', async () => {
     await markFinal(userId, resumeId);
     const doc = (await getResume(userId, resumeId))!.content;
@@ -106,7 +122,7 @@ describe('editor (Phase 5 acceptance)', () => {
       userId,
       resumeId,
       target,
-      findBullet(doc, target)!.text.replace(/^\w+/, 'Drove'),
+      reverb(findBullet(doc, target)!.text, 'Drove', 'Led'),
     );
     expect(res2.resumeId).not.toBe(resumeId);
     const versions = await adminDb()

@@ -8,7 +8,6 @@ import { saveJobParseAction } from '@/app/(app)/tailor/actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { COMPANY_STAGES, EVIDENCE_TYPES, SENIORITIES, type ParsedJD } from '@/lib/llm/schemas/jd';
 import { ROLE_FAMILIES } from '@/lib/llm/schemas/vault';
 import { knockoutWarnings, type RoleSpan } from '@/lib/vault/experience';
@@ -435,12 +434,13 @@ function Block({ title, hint, children }: { title: string; hint?: string; childr
   );
 }
 
+/** Wraps the control in its <label>, so screen readers announce the field name. */
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label>{label}</Label>
+    <label className="flex flex-col gap-1.5">
+      <span className="text-sm leading-none font-medium select-none">{label}</span>
       {children}
-    </div>
+    </label>
   );
 }
 

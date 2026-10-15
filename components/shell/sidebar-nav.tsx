@@ -11,7 +11,8 @@ export function SidebarNav({ showAdmin }: { showAdmin: boolean }) {
   return (
     <nav className="flex flex-row gap-1 overflow-x-auto md:flex-col">
       {items.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const base = ('match' in item && item.match) || item.href;
+        const active = pathname === base || pathname.startsWith(`${base}/`);
         return (
           <Link
             key={item.href}

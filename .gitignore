@@ -46,6 +46,9 @@ next-env.d.ts
 
 # private test fixtures (your real resume)
 /tests/fixtures/private/
+# personal resumes dropped at the repo root
+/*.pdf
+/*.docx
 
 # playwright
 /test-results/

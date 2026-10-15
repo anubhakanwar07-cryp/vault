@@ -1,19 +1,35 @@
 import { z } from 'zod';
 
-const serverSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.url(),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  DATABASE_URL: z.string().startsWith('postgres'),
-  LLM_PROVIDER: z.enum(['anthropic', 'openai']).default('openai'),
-  ANTHROPIC_API_KEY: z.string().optional(),
-  OPENAI_API_KEY: z.string().optional(),
-  LLM_FAST_MODEL: z.string().min(1),
-  LLM_STRONG_MODEL: z.string().min(1),
-  EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
-  APP_URL: z.url().default('http://localhost:3000'),
-  ADMIN_EMAILS: z.string().default(''),
-});
+const serverSchema = z
+  .object({
+    NEXT_PUBLIC_SUPABASE_URL: z.url(),
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+    DATABASE_URL: z.string().startsWith('postgres'),
+    LLM_PROVIDER: z.enum(['anthropic', 'openai']).default('openai'),
+    ANTHROPIC_API_KEY: z.string().optional(),
+    OPENAI_API_KEY: z.string().optional(),
+    LLM_FAST_MODEL: z.string().min(1),
+    LLM_STRONG_MODEL: z.string().min(1),
+    EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+    APP_URL: z.url().default('http://localhost:3000'),
+    ADMIN_EMAILS: z.string().default(''),
+  })
+  .superRefine((env, ctx) => {
+    // Embeddings always use OpenAI; the chat provider needs its own key.
+    if (!env.OPENAI_API_KEY)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['OPENAI_API_KEY'],
+        message: 'required for embeddings',
+      });
+    if (env.LLM_PROVIDER === 'anthropic' && !env.ANTHROPIC_API_KEY)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ANTHROPIC_API_KEY'],
+        message: 'required when LLM_PROVIDER=anthropic',
+      });
+  });
 
 export type ServerEnv = z.infer<typeof serverSchema>;
 
@@ -28,7 +44,9 @@ export function serverEnv(): ServerEnv {
   );
   const parsed = serverSchema.safeParse(raw);
   if (!parsed.success) {
-    const missing = parsed.error.issues.map((i) => i.path.join('.')).join(', ');
+    const missing = parsed.error.issues
+      .map((i) => (i.code === 'custom' ? `${i.path.join('.')} (${i.message})` : i.path.join('.')))
+      .join(', ');
     throw new Error(`Invalid or missing environment variables: ${missing}. See .env.example.`);
   }
   cached = parsed.data;

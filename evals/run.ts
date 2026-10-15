@@ -69,8 +69,8 @@ async function main() {
     import('@/lib/pipeline/run'),
   ]);
   const { adminDb, withUser } = await import('@/lib/db/client');
-  const { resumes, resumeBullets, pipelineRuns } = await import('@/lib/db/schema');
-  const { eq } = await import('drizzle-orm');
+  const { achievements, resumes, resumeBullets, pipelineRuns } = await import('@/lib/db/schema');
+  const { eq, sql } = await import('drizzle-orm');
   const { loadRecords } = await import('@/lib/pipeline/records');
   const { verifyBullet, bannedPhrasesIn } = await import('@/lib/pipeline/verify-code');
   const { resumeDoc, matchReport, allBullets } = await import('@/lib/resume/types');
@@ -87,6 +87,19 @@ async function main() {
   const userId = await ensureTestUser('eval@resume-tailor.test');
   const keyToId = stage === 'parse_jd' ? {} : await seedFixtureVault(userId);
   const idToKey = Object.fromEntries(Object.entries(keyToId).map(([k, v]) => [v, k]));
+  // Same tool list the pipeline verifies against: every tool in the vault, not just picked ones,
+  // so a tool borrowed from an unpicked achievement counts as a fabrication here too.
+  const vaultTools =
+    stage === 'parse_jd'
+      ? []
+      : (
+          await withUser(userId, (tx) =>
+            tx
+              .select({ t: sql<string>`distinct unnest(${achievements.tools})` })
+              .from(achievements)
+              .where(eq(achievements.isArchived, false)),
+          )
+        ).map((r) => r.t);
 
   const limit = pLimit(concurrency);
   const rows: Row[] = await Promise.all(
@@ -134,9 +147,6 @@ async function main() {
             ),
           );
           const byId = new Map(records.map((r) => [r.id, r]));
-          const vaultTools = [
-            ...new Set(Object.values(keyToId).length ? records.flatMap((r) => r.tools) : []),
-          ];
           const vctx = { vaultTools, jdKeywords: parsed.keywords, targetCompany: parsed.company };
 
           let fabrications = 0;
@@ -191,7 +201,7 @@ async function main() {
     return v.length ? v.reduce((s, x) => s + x, 0) / v.length : NaN;
   };
   const agg = {
-    roleFamilyAccuracy: ok.filter((r) => r.roleFamilyOk).length / Math.max(1, rows.length),
+    roleFamilyAccuracy: ok.filter((r) => r.roleFamilyOk).length / Math.max(1, ok.length),
     keywordRecall: mean(ok.map((r) => r.keywordRecall)),
     precision: mean(ok.map((r) => r.precision)),
     recall: mean(ok.map((r) => r.recall)),
@@ -199,10 +209,11 @@ async function main() {
     coverage: mean(ok.map((r) => r.coverage)),
     bannedHits: ok.reduce((s, r) => s + (r.bannedHits ?? 0), 0),
     recruiterScore: mean(ok.map((r) => r.recruiterScore)),
-    costUsd: mean(ok.map((r) => r.costUsd)),
-    durationMs: mean(ok.map((r) => r.durationMs)),
-    maxCostUsd: Math.max(0, ...ok.map((r) => r.costUsd ?? 0)),
-    maxDurationMs: Math.max(0, ...ok.map((r) => r.durationMs ?? 0)),
+    // SPEC §13 targets are per run, so the worst run is what's checked; means are reported too.
+    costUsd: Math.max(0, ...ok.map((r) => r.costUsd ?? 0)),
+    durationMs: Math.max(0, ...ok.map((r) => r.durationMs ?? 0)),
+    meanCostUsd: mean(ok.map((r) => r.costUsd)),
+    meanDurationMs: mean(ok.map((r) => r.durationMs)),
     errors: rows.length - ok.length,
   };
 
@@ -239,9 +250,9 @@ async function main() {
         const v = agg[k];
         const target =
           k === 'costUsd'
-            ? '< $0.10'
+            ? '< $0.10 per run'
             : k === 'durationMs'
-              ? '< 60 s'
+              ? '< 60 s per run'
               : k === 'fabrication' || k === 'bannedHits'
                 ? '0'
                 : k === 'recruiterScore'
@@ -254,7 +265,7 @@ async function main() {
     '',
     stage === 'parse_jd'
       ? ''
-      : `Max cost per run: $${agg.maxCostUsd.toFixed(3)} · max latency: ${(agg.maxDurationMs / 1000).toFixed(1)} s`,
+      : `cost and time above are the worst single run · mean cost: $${agg.meanCostUsd.toFixed(3)} · mean latency: ${(agg.meanDurationMs / 1000).toFixed(1)} s`,
     '',
     '## Per JD',
     '',
