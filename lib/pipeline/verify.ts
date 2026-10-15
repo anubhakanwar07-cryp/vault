@@ -11,12 +11,14 @@ export const MAX_VERIFY_RETRIES = 2;
 
 export type LineToCheck = { lineId: string; text: string; sources: AchievementRecord[] };
 
-/** SPEC §9.5: one fast-tier call over many lines; returns unsupported claims per line id. */
-export async function verifyClaimsLLM(
+export const VERIFY_BATCH_SIZE = 5;
+export const NO_VERDICT = 'The fact-checker returned no verdict for this line.';
+export const CHECK_UNAVAILABLE = 'Fact-check unavailable.';
+
+async function verifyBatch(
   ctx: Pick<RewriteContext, 'userId' | 'pipelineRunId'>,
   lines: LineToCheck[],
-): Promise<Record<string, string[]>> {
-  if (lines.length === 0) return {};
+): Promise<{ failures: Record<string, string[]>; missing: LineToCheck[] }> {
   const out = await callLLM({
     stage: 'verify',
     tier: 'fast',
@@ -38,12 +40,49 @@ export async function verifyClaimsLLM(
     maxTokens: 4000,
   });
   const failures: Record<string, string[]> = {};
+  const judged = new Set<string>();
   const known = new Set(lines.map((l) => l.lineId));
   for (const r of out.results) {
-    if (!known.has(r.line_id)) continue;
+    // A line with no claims wasn't actually checked — never count it as supported.
+    if (!known.has(r.line_id) || r.claims.length === 0) continue;
+    judged.add(r.line_id);
     const bad = r.claims.filter((c) => c.verdict === 'unsupported');
     if (bad.length)
       failures[r.line_id] = bad.map((c) => `“${c.claim}” — ${c.why || 'not in the source'}`);
+  }
+  return { failures, missing: lines.filter((l) => !judged.has(l.lineId)) };
+}
+
+/**
+ * SPEC §9.5: fast-tier fact-check, in small batches so one truncated reply can't sink every line.
+ * A line the auditor skips is re-checked once; if it's still unjudged it fails with NO_VERDICT.
+ * A batch whose call fails is retried once; if it fails again its lines fail with CHECK_UNAVAILABLE.
+ */
+export async function verifyClaimsLLM(
+  ctx: Pick<RewriteContext, 'userId' | 'pipelineRunId'>,
+  lines: LineToCheck[],
+): Promise<Record<string, string[]>> {
+  const failures: Record<string, string[]> = {};
+  const runBatches = async (todo: LineToCheck[], final: boolean): Promise<LineToCheck[]> => {
+    const batches: LineToCheck[][] = [];
+    for (let i = 0; i < todo.length; i += VERIFY_BATCH_SIZE)
+      batches.push(todo.slice(i, i + VERIFY_BATCH_SIZE));
+    const results = await Promise.all(
+      batches.map((b) =>
+        verifyBatch(ctx, b).catch((err: unknown) => {
+          console.error('[verify] fact-check batch failed', err);
+          if (final) for (const l of b) failures[l.lineId] = [CHECK_UNAVAILABLE];
+          return { failures: {}, missing: final ? [] : b };
+        }),
+      ),
+    );
+    for (const r of results) Object.assign(failures, r.failures);
+    return results.flatMap((r) => r.missing);
+  };
+  const missing = await runBatches(lines, false);
+  if (missing.length) {
+    const stillMissing = await runBatches(missing, true);
+    for (const l of stillMissing) failures[l.lineId] ??= [NO_VERDICT];
   }
   return failures;
 }
@@ -77,7 +116,7 @@ export async function rewriteAndVerifyBullets(opts: {
   /** Tier for rewrites. 'fast' suits light edits such as swapping the lead verb. */
   tier?: 'fast' | 'strong';
 }): Promise<Record<string, BulletOutcome>> {
-  const limit = pLimit(opts.concurrency ?? 8);
+  const limit = pLimit(opts.concurrency ?? 5);
   const outcomes: Record<string, BulletOutcome> = {};
   let pending = opts.records.map((r) => ({ record: r, reasons: [] as string[] }));
 
@@ -137,13 +176,7 @@ export async function rewriteAndVerifyBullets(opts: {
     const llmFailures = await verifyClaimsLLM(
       opts.ctx,
       passedCode.map((d) => ({ lineId: d.record.id, text: d.text, sources: [d.record] })),
-    ).catch((err: unknown) => {
-      // If the auditor itself fails, don't silently pass: treat as unverified and retry.
-      console.error('[verify] LLM verification failed', err);
-      return Object.fromEntries(
-        passedCode.map((d) => [d.record.id, ['Fact-check unavailable; retrying.']]),
-      );
-    });
+    );
 
     const next: typeof pending = [];
     for (const d of drafts) {
@@ -160,6 +193,8 @@ export async function rewriteAndVerifyBullets(opts: {
   for (const { record } of pending) {
     const o = outcomes[record.id]!;
     o.text = safeFallback(record);
+    // Never keep a draft that failed verification as the "generated" text.
+    o.generatedText = o.text;
     o.verified = false;
     o.fallback = true;
     o.keywordsUsed = [];

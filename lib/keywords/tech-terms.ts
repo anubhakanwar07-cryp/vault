@@ -130,3 +130,27 @@ export const TECH_TERMS = [
   'Aadhaar',
   'GST',
 ] as const;
+
+// Tool names that are also everyday words ("go-to-market", "R&D", "user segment", "react quickly").
+// They only count as a tool when written in their exact casing and not glued to "-", "&", "/" or "'".
+export const AMBIGUOUS_TECH_TERMS: ReadonlySet<string> = new Set([
+  'Go',
+  'R',
+  'REST',
+  'Segment',
+  'Mode',
+  'Linear',
+  'Heap',
+  'Spark',
+  'Branch',
+  'Sketch',
+  'Excel',
+  'Swift',
+  'Notion',
+  'Superset',
+  'React',
+  'Prophet',
+  'Sentry',
+  'Iterable',
+  'Postman',
+]);

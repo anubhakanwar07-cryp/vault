@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { keywordCoverage, mentions } from '@/lib/keywords/coverage';
-import { leadVerb, verifyBullet, type VerifyContext } from '@/lib/pipeline/verify-code';
+import {
+  leadVerb,
+  mentionsTech,
+  numberTokens,
+  verifyBullet,
+  type VerifyContext,
+} from '@/lib/pipeline/verify-code';
 import type { AchievementRecord } from '@/lib/pipeline/types';
 
 const record: AchievementRecord = {
@@ -107,8 +113,81 @@ describe('verifyBullet', () => {
     expect(verifyBullet(three, record, ctx).join()).toContain('max 2');
   });
 
+  it('checks the unit, not just the digits', () => {
+    expect(verifyBullet(ok.replace('~45%', '~45x'), record, ctx).join()).toContain('45x');
+    expect(verifyBullet(ok.replace('~45%', '~$45'), record, ctx).join()).toContain('$45');
+  });
+
+  it('does not let a tool version number permit a metric', () =>
+    expect(verifyBullet(`${ok}, growing usage 4x`, record, ctx).join()).toContain('4x'));
+
+  it('does not treat a tool version number as a fact', () =>
+    expect(
+      verifyBullet(
+        ok.replace('4 engineers', 'engineers'),
+        { ...record, project: { ...record.project!, ownership: 'Shared' } },
+        ctx,
+      ),
+    ).toEqual([]));
+
+  it('catches spelled-out quantities and multipliers', () => {
+    expect(
+      verifyBullet(ok.replace('4 engineers', 'twelve engineers'), record, ctx).join(),
+    ).toContain('twelve');
+    expect(verifyBullet(`${ok}, doubling retention`, record, ctx).join()).toContain('doubling');
+    expect(verifyBullet(`${ok} for hundreds of schools`, record, ctx).join()).toContain('hundreds');
+  });
+
+  it('accepts a spelled-out number that the source states as a digit', () =>
+    expect(verifyBullet(ok.replace('4 engineers', 'four engineers'), record, ctx)).toEqual([]));
+
+  it('needs the hedge next to the estimated number, not anywhere in the line', () =>
+    expect(
+      verifyBullet(
+        ok.replace('~45%', '45%').replace('explains', 'brought about'),
+        record,
+        ctx,
+      ).join(),
+    ).toContain('hedge'));
+
+  it('does not mistake everyday words for tools', () => {
+    const plain = `${ok} after a go-to-market review of R&D spend for each user segment`;
+    expect(verifyBullet(plain, record, ctx).join()).not.toContain('Names');
+  });
+
   it('never names the target company', () =>
     expect(verifyBullet(`${ok} for Brightpath`, record, ctx).join()).toContain('Brightpath'));
 });
 
 it('leadVerb', () => expect(leadVerb('  Launched a coach')).toBe('launched'));
+
+describe('numberTokens', () => {
+  it('applies magnitudes and keeps units', () => {
+    expect(
+      numberTokens('$1.2M and 2K users, 40% up, 3x faster').map((t) => [
+        t.value,
+        t.unit,
+        t.currency,
+      ]),
+    ).toEqual([
+      [1200000, '', true],
+      [2000, '', false],
+      [40, '%', false],
+      [3, 'x', false],
+    ]);
+  });
+  it('treats 2,000 and 2K as the same value', () =>
+    expect(numberTokens('2,000')[0]!.value).toBe(numberTokens('2K')[0]!.value));
+});
+
+describe('mentionsTech', () => {
+  it('matches ambiguous tool names only in exact case and standing alone', () => {
+    expect(mentionsTech('Built services in Go', 'Go')).toBe(true);
+    expect(mentionsTech('Ran the go-to-market plan', 'Go')).toBe(false);
+    expect(mentionsTech('Go-to-market plan', 'Go')).toBe(false);
+    expect(mentionsTech('Cut R&D cost', 'R')).toBe(false);
+    expect(mentionsTech('Analysed churn in R', 'R')).toBe(true);
+    expect(mentionsTech('Grew the SMB segment', 'Segment')).toBe(false);
+    expect(mentionsTech('Wrote SQL', 'SQL')).toBe(true);
+  });
+});
