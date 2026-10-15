@@ -17,6 +17,11 @@ const app = (o: Partial<AppForStats>): AppForStats => ({
 });
 
 describe('callback stats', () => {
+  it('keeps applications with no role family apart from genuine "other"', () => {
+    const s = callbackStats([app({ roleFamily: null }), app({ roleFamily: 'other' })]);
+    expect(s.byFamily.map((f) => f.family)).toEqual(['other', 'unknown']);
+  });
+
   it('counts an interview that later became a rejection as a callback', () => {
     expect(
       gotCallback(

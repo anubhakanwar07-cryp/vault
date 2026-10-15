@@ -1,8 +1,8 @@
 import 'server-only';
-import { and, desc, eq, isNotNull, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, isNotNull, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { withUser } from '@/lib/db/client';
-import { styleRules, userEdits } from '@/lib/db/schema';
+import { llmRuns, styleRules, userEdits } from '@/lib/db/schema';
 import { callLLM } from '@/lib/llm/client';
 import * as prompt from '@/lib/llm/prompts/deriveStyleRules';
 import { editsForPrompt } from './edit-diff';
@@ -16,9 +16,20 @@ const output = z.object({
     .default([]),
 });
 
-async function rewriteEditCount(userId: string): Promise<number> {
-  const [row] = await withUser(userId, (tx) =>
-    tx
+/**
+ * Real rewrite edits made since rules were last derived successfully (a valid style_rules LLM
+ * run). Counting from that marker means no derivation is skipped when edits land close together,
+ * and a failed derivation is retried on the next edit.
+ */
+async function editsSinceLastDerivation(userId: string): Promise<number> {
+  return withUser(userId, async (tx) => {
+    const [last] = await tx
+      .select({ at: llmRuns.createdAt })
+      .from(llmRuns)
+      .where(and(eq(llmRuns.stage, 'style_rules'), eq(llmRuns.zodValid, true)))
+      .orderBy(desc(llmRuns.createdAt))
+      .limit(1);
+    const [row] = await tx
       .select({ n: sql<number>`count(*)::int` })
       .from(userEdits)
       .where(
@@ -26,10 +37,11 @@ async function rewriteEditCount(userId: string): Promise<number> {
           eq(userEdits.editKind, 'rewrite'),
           isNotNull(userEdits.before),
           isNotNull(userEdits.after),
+          last?.at ? gt(userEdits.createdAt, last.at) : undefined,
         ),
-      ),
-  );
-  return row?.n ?? 0;
+      );
+    return row?.n ?? 0;
+  });
 }
 
 /** Derives rules from the latest edits and merges them into style_rules (SPEC §9.9). */
@@ -65,18 +77,19 @@ export async function deriveStyleRules(
     maxTokens: 1500,
   });
 
-  const existing = await withUser(userId, (tx) =>
-    tx
+  // Merge under a per-user lock, reading current rules inside it, so two derivations that finish
+  // together can't both insert the same rule.
+  return withUser(userId, async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${'style-rules:' + userId}))`);
+    const existing = await tx
       .select({
         id: styleRules.id,
         rule: styleRules.rule,
         evidenceCount: styleRules.evidenceCount,
         active: styleRules.active,
       })
-      .from(styleRules),
-  );
-  const { inserts, updates } = mergeRules(existing, out.rules);
-  await withUser(userId, async (tx) => {
+      .from(styleRules);
+    const { inserts, updates } = mergeRules(existing, out.rules);
     if (inserts.length)
       await tx.insert(styleRules).values(inserts.map((r) => ({ userId, ...r, active: true })));
     for (const u of updates)
@@ -84,15 +97,14 @@ export async function deriveStyleRules(
         .update(styleRules)
         .set({ evidenceCount: u.evidenceCount })
         .where(eq(styleRules.id, u.id));
+    return { inserted: inserts.length, updated: updates.length };
   });
-  return { inserted: inserts.length, updated: updates.length };
 }
 
-/** Called after each user edit: derives rules on every DERIVE_EVERY-th real rewrite. Never throws. */
+/** Called after each user edit: derives rules once DERIVE_EVERY new real rewrites exist. Never throws. */
 export async function maybeDeriveStyleRules(userId: string): Promise<void> {
   try {
-    const n = await rewriteEditCount(userId);
-    if (n > 0 && n % DERIVE_EVERY === 0) await deriveStyleRules(userId);
+    if ((await editsSinceLastDerivation(userId)) >= DERIVE_EVERY) await deriveStyleRules(userId);
   } catch (err) {
     console.error('[learning] style rule derivation failed', err);
   }

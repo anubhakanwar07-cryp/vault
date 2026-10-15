@@ -142,7 +142,9 @@ export async function updateApplicationStatus(
     const [a] = await tx
       .select({ status: applications.status, statusHistory: applications.statusHistory })
       .from(applications)
-      .where(eq(applications.id, id));
+      .where(eq(applications.id, id))
+      // Row lock: two quick status changes must append in turn, not overwrite each other's history.
+      .for('update');
     if (!a) throw new Error('Application not found');
     const next = withStatusChange(a, status);
     if (next === a) return;

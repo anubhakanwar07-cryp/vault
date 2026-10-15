@@ -54,13 +54,17 @@ export type CallbackStats = {
   byFamily: { family: string; tailored: GroupStat; baseline: GroupStat }[];
 };
 
+export const UNKNOWN_FAMILY = 'unknown';
+
 export function callbackStats(apps: AppForStats[]): CallbackStats {
-  const families = [...new Set(apps.map((a) => a.roleFamily ?? 'other'))].sort();
+  // Applications with no known family get their own group, separate from a genuine "other".
+  const familyOf = (a: AppForStats) => a.roleFamily ?? UNKNOWN_FAMILY;
+  const families = [...new Set(apps.map(familyOf))].sort();
   return {
     tailored: group(apps.filter((a) => a.isTailored)),
     baseline: group(apps.filter((a) => !a.isTailored)),
     byFamily: families.map((family) => {
-      const f = apps.filter((a) => (a.roleFamily ?? 'other') === family);
+      const f = apps.filter((a) => familyOf(a) === family);
       return {
         family,
         tailored: group(f.filter((a) => a.isTailored)),

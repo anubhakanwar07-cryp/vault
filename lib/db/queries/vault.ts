@@ -156,10 +156,26 @@ export async function upsertProfile(userId: string, data: Out<typeof profileInpu
   );
 }
 
+/** Thrown when an update matched no row the user owns (stale id, or someone else's). */
+export class NotFoundError extends Error {
+  constructor(what: string) {
+    super(`${what} not found`);
+    this.name = 'NotFoundError';
+  }
+}
+
+/** Throws unless `.returning()` gave back a row. */
+function updated<T>(rows: T[], what: string): void {
+  if (rows.length === 0) throw new NotFoundError(what);
+}
+
 export async function saveRole(userId: string, id: string | null, data: Out<typeof roleInput>) {
   return withUser(userId, async (tx) => {
     if (id) {
-      await tx.update(roles).set(data).where(eq(roles.id, id));
+      updated(
+        await tx.update(roles).set(data).where(eq(roles.id, id)).returning({ id: roles.id }),
+        'Role',
+      );
       return id;
     }
     const [row] = await tx
@@ -177,8 +193,24 @@ export async function saveProject(
 ) {
   const values = { ...data, isSideProject: data.roleId === null ? true : data.isSideProject };
   return withUser(userId, async (tx) => {
+    // Foreign keys ignore row-level security, so check the role belongs to this user (RLS applies
+    // to this select) before linking to it.
+    if (values.roleId) {
+      const [own] = await tx
+        .select({ id: roles.id })
+        .from(roles)
+        .where(eq(roles.id, values.roleId));
+      if (!own) throw new NotFoundError('Role');
+    }
     if (id) {
-      await tx.update(projects).set(values).where(eq(projects.id, id));
+      updated(
+        await tx
+          .update(projects)
+          .set(values)
+          .where(eq(projects.id, id))
+          .returning({ id: projects.id }),
+        'Project',
+      );
       // Keep the denormalised role_id on achievements in sync.
       await tx
         .update(achievements)
@@ -200,7 +232,7 @@ async function roleIdForProject(tx: Tx, projectId: string | null): Promise<strin
     .select({ roleId: projects.roleId })
     .from(projects)
     .where(eq(projects.id, projectId));
-  if (!p) throw new Error('Project not found');
+  if (!p) throw new NotFoundError('Project');
   return p.roleId;
 }
 
@@ -212,10 +244,14 @@ export async function saveAchievement(
   return withUser(userId, async (tx) => {
     const roleId = await roleIdForProject(tx, data.projectId);
     if (id) {
-      await tx
-        .update(achievements)
-        .set({ ...data, roleId })
-        .where(eq(achievements.id, id));
+      updated(
+        await tx
+          .update(achievements)
+          .set({ ...data, roleId })
+          .where(eq(achievements.id, id))
+          .returning({ id: achievements.id }),
+        'Achievement',
+      );
       return id;
     }
     const [row] = await tx
@@ -233,7 +269,14 @@ export async function saveEducation(
 ) {
   return withUser(userId, async (tx) => {
     if (id) {
-      await tx.update(education).set(data).where(eq(education.id, id));
+      updated(
+        await tx
+          .update(education)
+          .set(data)
+          .where(eq(education.id, id))
+          .returning({ id: education.id }),
+        'Education entry',
+      );
       return id;
     }
     const [row] = await tx
@@ -247,7 +290,10 @@ export async function saveEducation(
 export async function saveExtra(userId: string, id: string | null, data: Out<typeof extraInput>) {
   return withUser(userId, async (tx) => {
     if (id) {
-      await tx.update(extras).set(data).where(eq(extras.id, id));
+      updated(
+        await tx.update(extras).set(data).where(eq(extras.id, id)).returning({ id: extras.id }),
+        'Entry',
+      );
       return id;
     }
     const [row] = await tx

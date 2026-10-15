@@ -7,7 +7,14 @@ import { requireUser } from '@/lib/auth';
 import { addVaultSource } from '@/lib/db/queries/vault';
 import { FetchPageError, fetchPortfolio } from '@/lib/import/fetch-page';
 import type { MergeInfo } from '@/lib/import/merge';
-import { extractResumeText, MAX_UPLOAD_BYTES, resumeKind } from '@/lib/import/parse-resume';
+import {
+  CONTENT_TYPES,
+  extractResumeText,
+  MAX_UPLOAD_BYTES,
+  resumeKind,
+  sniffResumeKind,
+  type ResumeKind,
+} from '@/lib/import/parse-resume';
 import { saveImport, type ImportCounts } from '@/lib/import/save-import';
 import type { ImportFlag } from '@/lib/import/source-check';
 import { MAX_SOURCE_TEXT, structureSource, type SourceKind } from '@/lib/import/structure';
@@ -27,9 +34,16 @@ export type ImportDraft = {
 const MIN_TEXT = 150;
 
 type Extracted =
-  { text: string; label: string; url?: string; filePath?: string } | { error: string };
+  | {
+      text: string;
+      label: string;
+      url?: string;
+      /** Uploaded to Storage only once the import succeeds, so failures leave no orphan files. */
+      file?: { name: string; bytes: Uint8Array; kind: ResumeKind };
+    }
+  | { error: string };
 
-async function extract(userId: string, kind: SourceKind, formData: FormData): Promise<Extracted> {
+async function extract(kind: SourceKind, formData: FormData): Promise<Extracted> {
   if (kind === 'brief') {
     const text = String(formData.get('text') ?? '').trim();
     if (text.length < 40)
@@ -58,17 +72,16 @@ async function extract(userId: string, kind: SourceKind, formData: FormData): Pr
     return { error: 'Choose a PDF or DOCX file, or paste your resume text.' };
   }
   if (file.size > MAX_UPLOAD_BYTES) return { error: 'That file is over 5 MB.' };
-  const fileKind = resumeKind(file.name, file.type);
-  if (!fileKind) return { error: 'Only PDF and DOCX files are supported.' };
-
+  const claimed = resumeKind(file.name, file.type);
+  if (!claimed) return { error: 'Only PDF and DOCX files are supported.' };
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const filePath = await uploadUserFile(
-    userId,
-    'imports',
-    file.name,
-    bytes,
-    file.type || 'application/octet-stream',
-  );
+  // Trust the bytes, not the name or browser-supplied type.
+  const fileKind = sniffResumeKind(bytes);
+  if (fileKind !== claimed) {
+    return {
+      error: 'That file isn’t a valid PDF or DOCX. Try exporting it again, or paste the text.',
+    };
+  }
   try {
     const text = await extractResumeText(bytes, fileKind);
     if (text.length < MIN_TEXT) {
@@ -77,7 +90,7 @@ async function extract(userId: string, kind: SourceKind, formData: FormData): Pr
           'That file has almost no selectable text (it may be a scanned image). Paste the text instead.',
       };
     }
-    return { text, label: file.name, filePath };
+    return { text, label: file.name, file: { name: file.name, bytes, kind: fileKind } };
   } catch (err) {
     console.error('[import] text extraction failed', err);
     return { error: 'We couldn’t read that file. Try the other format, or paste the text.' };
@@ -88,18 +101,27 @@ export async function importSourceAction(formData: FormData): Promise<ActionResu
   const user = await requireUser();
   const kind = z.enum(['resume', 'portfolio', 'brief']).parse(formData.get('kind'));
 
-  const got = await extract(user.id, kind, formData);
+  const got = await extract(kind, formData);
   if ('error' in got) return { ok: false, error: got.error };
   const text = got.text.slice(0, MAX_SOURCE_TEXT);
 
   try {
     const { draft, flags, merge } = await structureSource(user.id, kind, text);
+    const filePath = got.file
+      ? await uploadUserFile(
+          user.id,
+          'imports',
+          got.file.name,
+          got.file.bytes,
+          CONTENT_TYPES[got.file.kind],
+        )
+      : undefined;
     // Keep the raw source: provenance for the vault and for later fact-checking.
     await addVaultSource(user.id, {
       kind,
       title: got.label,
       url: got.url,
-      filePath: got.filePath,
+      filePath,
       text,
     });
     revalidatePath('/vault/import');

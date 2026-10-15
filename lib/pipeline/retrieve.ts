@@ -47,7 +47,8 @@ export async function retrieve(
   const terms = mustHaveTerms(jd);
 
   return withUser(userId, async (tx) => {
-    const active = eq(achievements.isArchived, false);
+    // Achievements without a project can't be placed on the page (select groups by project).
+    const active = and(eq(achievements.isArchived, false), isNotNull(achievements.projectId));
     const similar = await tx
       .select({ id: achievements.id })
       .from(achievements)

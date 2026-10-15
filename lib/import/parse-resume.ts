@@ -14,6 +14,19 @@ export function resumeKind(name: string, mime: string): ResumeKind | null {
   return null;
 }
 
+export const CONTENT_TYPES: Record<ResumeKind, string> = {
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+/** The file's real type from its first bytes: "%PDF-" or a ZIP header (DOCX is a ZIP). */
+export function sniffResumeKind(data: Uint8Array): ResumeKind | null {
+  const head = String.fromCharCode(...data.subarray(0, 5));
+  if (head === '%PDF-') return 'pdf';
+  if (head.startsWith('PK\x03\x04')) return 'docx';
+  return null;
+}
+
 /** Plain text from a resume file (SPEC §6.2 step 1). */
 export async function extractResumeText(data: Uint8Array, kind: ResumeKind): Promise<string> {
   let text: string;

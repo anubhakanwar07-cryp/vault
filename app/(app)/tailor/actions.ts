@@ -46,10 +46,10 @@ export async function createJobAction(
   }
 
   jdText = jdText.slice(0, MAX_JD_TEXT);
-  const jobId = await createJob(user.id, { jdText, sourceUrl });
+  // Parse before creating the job, so a failed parse doesn't leave an empty job behind.
+  let parsed;
   try {
-    const parsed = await parseJD(user.id, jdText);
-    await setJobParse(user.id, jobId, parsed);
+    parsed = await parseJD(user.id, jdText);
   } catch (err) {
     console.error('[tailor] parseJD failed', err);
     return {
@@ -57,6 +57,8 @@ export async function createJobAction(
       error: 'We couldn’t read the requirements from that job description. Please try again.',
     };
   }
+  const jobId = await createJob(user.id, { jdText, sourceUrl });
+  await setJobParse(user.id, jobId, parsed);
   revalidatePath('/tailor/new');
   return { ok: true, data: { jobId } };
 }

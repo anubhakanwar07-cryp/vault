@@ -7,6 +7,7 @@ import { requireUser } from '@/lib/auth';
 import {
   achievementIdsFor,
   deleteVaultItem,
+  NotFoundError,
   saveAchievement,
   saveEducation,
   saveExtra,
@@ -25,6 +26,20 @@ import { refreshAchievements } from '@/lib/vault/embed';
 
 const id = z.uuid().nullable();
 
+const GONE = 'That item no longer exists in your vault. Reload the page and try again.';
+
+/** Runs a save; a stale or foreign id becomes a friendly error instead of a crash. */
+async function guarded<T>(
+  fn: () => Promise<T>,
+): Promise<{ ok: true; data: T } | { ok: false; error: string }> {
+  try {
+    return { ok: true, data: await fn() };
+  } catch (err) {
+    if (err instanceof NotFoundError) return { ok: false, error: GONE };
+    throw err;
+  }
+}
+
 function embeddingWarning(err: string | null): string | undefined {
   return err
     ? 'Saved, but the search index could not be updated. It will retry on the next edit.'
@@ -38,7 +53,9 @@ export async function saveRoleAction(
   const user = await requireUser();
   const parsed = roleInput.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error);
-  const roleId = await saveRole(user.id, id.parse(rawId), parsed.data);
+  const saved = await guarded(() => saveRole(user.id, id.parse(rawId), parsed.data));
+  if (!saved.ok) return saved;
+  const roleId = saved.data;
   // Role title/company are part of the embedding text of its achievements.
   const { embeddingError } = rawId
     ? await refreshAchievements(user.id, await achievementIdsFor(user.id, { roleId }))
@@ -54,7 +71,9 @@ export async function saveProjectAction(
   const user = await requireUser();
   const parsed = projectInput.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error);
-  const projectId = await saveProject(user.id, id.parse(rawId), parsed.data);
+  const saved = await guarded(() => saveProject(user.id, id.parse(rawId), parsed.data));
+  if (!saved.ok) return saved;
+  const projectId = saved.data;
   // Project name/one-liner feed the embedding text; proof_url feeds completeness.
   const { embeddingError } = rawId
     ? await refreshAchievements(user.id, await achievementIdsFor(user.id, { projectId }))
@@ -70,7 +89,17 @@ export async function saveAchievementAction(
   const user = await requireUser();
   const parsed = achievementInput.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error);
-  const achievementId = await saveAchievement(user.id, id.parse(rawId), parsed.data);
+  // Resumes group bullets under projects, so an achievement with no project could never be used.
+  if (!parsed.data.projectId) {
+    return {
+      ok: false,
+      error: 'Please fix the highlighted fields.',
+      fieldErrors: { projectId: 'Pick a project — achievements need one to appear on a resume.' },
+    };
+  }
+  const saved = await guarded(() => saveAchievement(user.id, id.parse(rawId), parsed.data));
+  if (!saved.ok) return saved;
+  const achievementId = saved.data;
   const { embeddingError } = await refreshAchievements(user.id, [achievementId]);
   revalidatePath('/vault');
   revalidatePath('/dashboard');
@@ -84,7 +113,9 @@ export async function saveEducationAction(
   const user = await requireUser();
   const parsed = educationInput.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error);
-  const eduId = await saveEducation(user.id, id.parse(rawId), parsed.data);
+  const saved = await guarded(() => saveEducation(user.id, id.parse(rawId), parsed.data));
+  if (!saved.ok) return saved;
+  const eduId = saved.data;
   revalidatePath('/vault');
   return { ok: true, data: eduId };
 }
@@ -96,7 +127,9 @@ export async function saveExtraAction(
   const user = await requireUser();
   const parsed = extraInput.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error);
-  const extraId = await saveExtra(user.id, id.parse(rawId), parsed.data);
+  const saved = await guarded(() => saveExtra(user.id, id.parse(rawId), parsed.data));
+  if (!saved.ok) return saved;
+  const extraId = saved.data;
   revalidatePath('/vault');
   return { ok: true, data: extraId };
 }
